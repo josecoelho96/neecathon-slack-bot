@@ -1,0 +1,23 @@
+version: '3'
+services:
+  db:
+    image: postgres:10-alpine
+    container_name: patinhas-bot-db
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d/
+  python:
+    build: .
+    container_name: patinhas-bot-server
+    env_file: .env
+    volumes:
+      - ./src:/src
+    ports:
+      - "${APP_PORT_EXTERNAL}:8000"
+    depends_on:
+      - db
