@@ -13,7 +13,9 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         logging.info("Got GET request.")
         self.send_response(HTTPStatus.OK)
-        self.wfile.write(bytes("Response!", "utf-8"))
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+        self.wfile.write(bytes("<p>You accessed path: %s</p>" % self.path, "utf-8"))
 
 def start_http_server(host = '', port = 8000):
     server_address = (host, port)
