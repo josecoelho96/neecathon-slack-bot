@@ -1,31 +1,40 @@
 #!/usr/bin/python3
 
-import socket
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import time
 import logging
+import socket
 
-hostName = ""
-hostPort = 8000
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from http import HTTPStatus
 
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+# As defined on `docker-compose.yml`
+HOST_PORT = 8000
 
-class MyServer(BaseHTTPRequestHandler):
+class ServerRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        logging.info("Got GET request.")
+        self.send_response(HTTPStatus.OK)
+        self.wfile.write(bytes("Response!", "utf-8"))
 
-	#	GET is for clients geting the predi
-	def do_GET(self):
-		self.send_response(200, "success.")
-		self.wfile.write(bytes("Response.", "utf-8"))
-		# self.wfile.write(bytes("<p>You accessed path: %s</p>" % self.path, "utf-8"))
-		logging.info("Got GET request.")
+def start_http_server(host = '', port = 8000):
+    server_address = (host, port)
+    server = HTTPServer(server_address, ServerRequestHandler)
+    logging.info("HTTP server started [port: {}].".format(port))
+    return server
 
-myServer = HTTPServer((hostName, hostPort), MyServer)
-print(time.asctime(), "Server Starts - %s:%s" % (hostName, hostPort))
+def stop_http_server(server):
+    server.server_close()
+    logging.info("HTTP server stopped.")
 
-try:
-	myServer.serve_forever()
-except KeyboardInterrupt:
-	pass
+def main():
+    logging.basicConfig(
+        format='%(asctime)s:%(levelname)s:%(message)s',
+        level=logging.DEBUG
+    )
+    server = start_http_server(port=HOST_PORT)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        stop_http_server(server)
 
-myServer.server_close()
-print(time.asctime(), "Server Stops - %s:%s" % (hostName, hostPort))
+if __name__ == "__main__":
+    main()
