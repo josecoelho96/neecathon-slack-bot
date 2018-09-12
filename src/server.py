@@ -18,7 +18,6 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type','application/json')
         self.end_headers()
         response = {
-            "success": False,
             "message": "Method '{}' not allowed".format(method)
         }
         self.wfile.write(bytes(json.dumps(response), "utf-8"))
