@@ -6,6 +6,7 @@ import socket
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import HTTPStatus
+from urllib.parse import parse_qs
 
 # As defined on `docker-compose.yml`
 HOST_PORT = 8000
@@ -19,6 +20,24 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         response = {
             "message": "Method '{}' not allowed".format(method)
+        }
+        self.wfile.write(bytes(json.dumps(response), "utf-8"))
+
+    def handle_length_required(self):
+        self.send_response(HTTPStatus.LENGTH_REQUIRED)
+        self.send_header('Content-type','application/json')
+        self.end_headers()
+        response = {
+            "message": "'Content-Length' required."
+        }
+        self.wfile.write(bytes(json.dumps(response), "utf-8"))
+
+    def handle_internal_server_error(self):
+        self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.send_header('Content-type','application/json')
+        self.end_headers()
+        response = {
+            "message": "Server error."
         }
         self.wfile.write(bytes(json.dumps(response), "utf-8"))
 
@@ -56,13 +75,49 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         logging.debug("Got POST request.")
-        self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type','text/html')
-        self.end_headers()
-        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
-        post_data = self.rfile.read(content_length) # <--- Gets the data itself
+
+        # Get content length or return prematurely
+        if self.headers['Content-Length'] is None:
+            logging.warn("Header 'Content-Length' wasn't received.")
+            self.handle_length_required()
+            return # Do not continue
+
+        content_length = 0
+        try:
+            content_length = int(self.headers['Content-Length'])
+        except TypeError as te:
+            logging.error("TypeError: Error converting 'Content-Length' header to int: {}".format(te))
+            self.handle_internal_server_error()
+            return
+        except Exception as ex:
+            logging.error("Exception: Error converting 'Content-Length' header to int: {}".format(ex))
+            self.handle_internal_server_error()
+            return
+
+        post_data = parse_qs(self.rfile.read(content_length).decode('utf-8'))
         logging.info(post_data)
-        self.wfile.write(bytes("Data received successfully!", "utf-8"))
+
+        self.send_response(HTTPStatus.OK)
+        self.send_header('Content-type','application/json')
+        self.end_headers()
+
+        response = {
+            "text": "O meu assistente está à trabalhar no teu pedido...",
+        }
+
+        self.wfile.write(bytes(json.dumps(response), "utf-8"))
+
+        # response = {
+        #     "text": "Estas são as informações que o Tio Patinhas tem...",
+        #     "attachments": [
+        #         {
+        #             "title":"Saldo",
+        #             "text":"20 mokas"
+        #         }
+        #     ]
+        # }
+        # response['attachments'].append({"title":"Vrum","text":"Carro"})
+        # response['attachments'].append({"title":"channel-name","text":channel_name})
 
 
 def start_http_server(host = '', port = 8000):
