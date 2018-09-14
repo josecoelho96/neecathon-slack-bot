@@ -3,6 +3,7 @@
 import json
 import logging as log
 import time
+import threading
 
 from bottle import abort, Bottle, response, request, run
 from queue import Queue
@@ -18,8 +19,12 @@ SLACK_REQUEST_DATA_KEYS = [
     "user_id",
     "user_name",
     "text",
-    "response_url"
+    "response_url",
 ]
+
+SERVER_PORT = 8888
+
+REQUEST_DISPATCHER_THREADS_COUNT = 5
 
 requests_queue = Queue()
 
@@ -57,28 +62,36 @@ def valid_request_data(request_data):
         return True
     return False
 
-
-bot_app = JSONBottle()
-bot_app.route(path="/balance", method=["POST"], callback=balance_handler)
-
 def start_server():
-    run(app = bot_app, host="0.0.0.0", port=8000)
+    log.info("Starting server on port {}".format(SERVER_PORT))
+    run(app = bot_app, host="0.0.0.0", port=SERVER_PORT)
+
+def start_dispatcher_threads():
+    log.info("Starting {} dispatcher threads.".format(REQUEST_DISPATCHER_THREADS_COUNT))
+    for i in range(REQUEST_DISPATCHER_THREADS_COUNT):
+        log.info("Starting request dispatcher thread {}".format(i))
+        t = Thread(target=dispatch_requests, name="DispatcherThread-{}".format(i))
+        t.setDaemon(True)
+        t.start()
 
 def dispatch_requests():
     while True:
         request = requests_queue.get()
-        log.debug("Process new request...")
+        log.debug("Process new request by Thread: {}...".format(threading.current_thread().getName()))
+        time.sleep(10)
+        log.debug("Process request done on Thread: {}...".format(threading.current_thread().getName()))
         requests_queue.task_done()
+
+bot_app = JSONBottle()
+bot_app.route(path="/balance", method=["POST"], callback=balance_handler)
 
 def main():
     log.basicConfig(
         format='%(asctime)s:%(levelname)s:%(message)s',
         level=log.DEBUG
     )
-    listener_thread = Thread(target=start_server)
-    listener_thread.start()
-    dispatcher_thread = Thread(target=dispatch_requests)
-    dispatcher_thread.start()
+    start_dispatcher_threads()
+    start_server()
 
 if __name__ == "__main__":
     main()
