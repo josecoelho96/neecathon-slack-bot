@@ -24,8 +24,6 @@ SLACK_REQUEST_DATA_KEYS = [
 
 SERVER_PORT = 8888
 
-REQUEST_DISPATCHER_THREADS_COUNT = 5
-
 requests_queue = Queue()
 
 class JSONBottle(Bottle):
@@ -66,13 +64,11 @@ def start_server():
     log.info("Starting server on port {}".format(SERVER_PORT))
     run(app = bot_app, host="0.0.0.0", port=SERVER_PORT)
 
-def start_dispatcher_threads():
-    log.info("Starting {} dispatcher threads.".format(REQUEST_DISPATCHER_THREADS_COUNT))
-    for i in range(REQUEST_DISPATCHER_THREADS_COUNT):
-        log.info("Starting request dispatcher thread {}".format(i))
-        t = Thread(target=dispatch_requests, name="DispatcherThread-{}".format(i))
-        t.setDaemon(True)
-        t.start()
+def start_dispatcher_thread():
+    log.info("Starting dispatcher thread.")
+    t = Thread(target=dispatch_requests, name="DispatcherThread")
+    t.setDaemon(True)
+    t.start()
 
 def dispatch_requests():
     while True:
@@ -90,7 +86,7 @@ def main():
         format='%(asctime)s:%(levelname)s:%(message)s',
         level=log.DEBUG
     )
-    start_dispatcher_threads()
+    start_dispatcher_thread()
     start_server()
 
 if __name__ == "__main__":
