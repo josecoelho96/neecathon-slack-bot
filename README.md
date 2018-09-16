@@ -6,7 +6,7 @@ A slack bot for the NEECathon!
 Returns the team ID, a key to later join the team and the team name.
 
 
-```./entrar [team-code]``` \ - Joins the team with the defined code, if exists.\
+```./entrar [team-code]``` - Joins the team with the defined code, if exists.\
 TODO: Join the user to channels.
 
 ## To be added
