@@ -13,11 +13,12 @@ services:
       - ./db/init:/docker-entrypoint-initdb.d/
   python:
     build: .
+    restart: on-failure
     container_name: patinhas-bot-server
     env_file: .env
     volumes:
       - ./src:/src
     ports:
-      - "${APP_PORT_EXTERNAL}:8000"
+      - "${APP_PORT_EXTERNAL}:8888"
     depends_on:
       - db
