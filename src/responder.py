@@ -33,6 +33,14 @@ def confirm_join_team_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_check_balance_command_reception():
+    """Immediate response to a check balance command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Pedi ao Tio Patinhas para procurar os teus detalhes financeiros!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -127,6 +135,39 @@ def join_team_delayed_reply_success(request, team_name):
     log.debug("User joined team.")
     response_content = {
         "text": "*Parabéns!*\nFoste adicionado à equipa '{}'".format(team_name)
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def check_balance_delayed_reply_no_team(request):
+    """Delayed response to Slack reporting that user has no team."""
+    response_content = {
+        "text": "*Ainda não te encontras numa equipa!*\nEntra numa equipa com o comando: `/entrar`\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def check_balance_delayed_reply_success(request, team, balance):
+    """Delayed response to Slack reporting the user's balance."""
+    log.debug("Send balance details to user.")
+    response_content = {
+        "text": "Aqui estão os detalhes financeiros da tua conta!",
+        "attachments": [
+            {
+                "text":"*Equipa*: {}\n*Saldo*: {:.2f} :money_with_wings:".format(team, balance)
+            }
+        ]
     }
     try:
         if send_delayed_response(request['response_url'], response_content):

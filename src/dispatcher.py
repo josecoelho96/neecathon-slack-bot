@@ -32,6 +32,8 @@ def general_dispatcher():
             create_team_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["JOIN_TEAM"]:
             join_team_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["CHECK_BALANCE"]:
+            check_balance_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -203,6 +205,50 @@ def join_team_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.join_team_delayed_reply_success(request, team_info["name"])
+
+def check_balance_dispatcher(request):
+    """Dispatcher to check balance requests/commands."""
+    log.debug("Check balance request.")
+    # First, check if user is in a team
+    try:
+        if not database.user_has_team(request["user_id"]):
+            # User has no team
+            log.debug("User has no team.")
+            responder.check_balance_delayed_reply_no_team(request)
+            try:
+                database.save_request_log(request, False, "User has no team.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User team search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user's team search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    # If has a team, get the team balance
+    log.debug("Check balance!")
+    try:
+        [team_name, team_balance] = database.get_users_balance(request["user_id"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User's team balance check failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user's team balance search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+    else:
+        log.debug("Report data to user.")
+        responder.check_balance_delayed_reply_success(request, team_name, team_balance)
+        try:
+            database.save_request_log(request, True, "Balance retrieved successfully.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

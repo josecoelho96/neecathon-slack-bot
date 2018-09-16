@@ -387,3 +387,39 @@ def add_user_to_team(user_slack_id, team_id):
         else:
             cursor.close()
             db_connection.close()
+
+def get_users_balance(user_slack_id):
+    """Get a user's balance."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't retrieve user's balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT team_name, balance
+            FROM teams
+            WHERE team_id IN (
+                SELECT team
+                FROM users
+                WHERE slack_id=%s
+            )
+            """
+        data = (
+            user_slack_id,
+        )
+
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Failed to get user's team balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
+        else:
+            result = cursor.fetchone()
+            cursor.close()
+            db_connection.close()
+            return result

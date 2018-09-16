@@ -39,5 +39,5 @@ CREATE TABLE IF NOT EXISTS teams (
     created_at TIMESTAMP DEFAULT NOW(),
     team_id UUID,
     team_name TEXT,
-    balance NUMERIC(20, 4)
+    balance NUMERIC(10, 4)
 );
