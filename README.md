@@ -9,9 +9,13 @@ Returns the team ID, a key to later join the team and the team name.
 ```./entrar [team-code]``` - Joins the team with the defined code, if exists.\
 TODO: Join the user to channels.
 
+
+```./saldo``` - Shows the current balance (team-wise).
+
+
 ## To be added
 ```./ver-equipas``` \
-```./saldo``` \
+
 ```./movimentos <qtd>``` \
 ```./compra [team|user] [qtd] [description]```
 
