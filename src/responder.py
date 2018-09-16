@@ -25,6 +25,14 @@ def confirm_create_team_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_join_team_command_reception():
+    """Immediate response to a join team command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Um dos meus macaquinhos vai verificar se podes juntar-te à equipa!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -63,6 +71,62 @@ def create_team_delayed_reply_success(request, team_id, team_name, team_entry_co
                 "text":"*Nome*: {}\n*Código*: {}\n*ID*: {}\n".format(team_name, team_entry_code, team_id)
             }
         ]
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def join_team_delayed_reply_missing_arguments(request):
+    """Delayed response to Slack reporting not enough arguments on join team command"""
+    log.debug("Missing arguments on join team request.")
+    response_content = {
+        "text": "*ERRO! Utilização*: ```/entrar <código da equipa>```"
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def join_team_delayed_reply_already_on_team(request):
+    """Delayed response to Slack reporting user is already on a team on join team command"""
+    log.debug("User already on team send a join team request.")
+    response_content = {
+        "text": "*Já te encontras numa equipa!*\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>.".format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def join_team_delayed_reply_invalid_code(request):
+    """Delayed response to Slack reporting an invalid code."""
+    log.debug("Invalid entry code on join team request.")
+    response_content = {
+        "text": "*Código inválido!*\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>.".format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def join_team_delayed_reply_success(request, team_name):
+    """Delayed response to Slack reporting user joined team."""
+    log.debug("User joined team.")
+    response_content = {
+        "text": "*Parabéns!*\nFoste adicionado à equipa '{}'".format(team_name)
     }
     try:
         if send_delayed_response(request['response_url'], response_content):

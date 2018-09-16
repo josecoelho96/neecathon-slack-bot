@@ -30,3 +30,4 @@ def start():
 def define_routing(app):
     """Defines all server routing scheme."""
     app.route(path="/create-team", method=["POST"], callback=handlers.create_team)
+    app.route(path="/join-team", method=["POST"], callback=handlers.join_team)

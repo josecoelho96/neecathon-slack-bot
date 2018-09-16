@@ -22,3 +22,22 @@ CREATE TABLE IF NOT EXISTS team_registration (
     team_name TEXT,
     entry_code TEXT
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    slack_id TEXT,
+    slack_name TEXT,
+    user_id UUID,
+    team UUID,
+    name TEXT,
+    email TEXT
+);
+
+CREATE TABLE IF NOT EXISTS teams (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    team_id UUID,
+    team_name TEXT,
+    balance NUMERIC(20, 4)
+);

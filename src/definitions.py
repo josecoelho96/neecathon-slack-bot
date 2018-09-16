@@ -16,4 +16,7 @@ SLACK_REQUEST_DATA_KEYS = [
 
 SLACK_COMMANDS = {
     "CREATE_TEAM": "/criar-equipa",
+    "JOIN_TEAM": "/entrar",
 }
+
+INITIAL_TEAM_BALANCE = 200
