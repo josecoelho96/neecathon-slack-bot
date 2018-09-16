@@ -1,3 +1,4 @@
 # Env files
 .env
 db/data
+__pycache__/
