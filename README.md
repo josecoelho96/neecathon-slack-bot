@@ -13,11 +13,13 @@ TODO: Join the user to channels.
 ```./saldo``` - Shows the current balance (team-wise).
 
 
+```./compra [@user] [qtd] [description]``` - Allows to buy something from another user.
+TODO: Posts a message to channels.
+
 ## To be added
+```./movimentos <qtd>``` \
 ```./ver-equipas``` \
 
-```./movimentos <qtd>``` \
-```./compra [team|user] [qtd] [description]```
 
 ## Features to add
 - Verify requests origin and validation
