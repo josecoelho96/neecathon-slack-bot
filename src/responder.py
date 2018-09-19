@@ -5,7 +5,7 @@ import os
 import requests
 import logging as log
 import common
-
+import database
 
 common.setup_logger()
 
@@ -38,6 +38,14 @@ def confirm_check_balance_command_reception():
     response.add_header("Content-Type", "application/json")
     response_content = {
         "text": "Pedi ao Tio Patinhas para procurar os teus detalhes financeiros!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_buy_command_reception():
+    """Immediate response to a buy command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar do teu pedido de compra!",
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
@@ -177,6 +185,130 @@ def check_balance_delayed_reply_success(request, team, balance):
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
 
+def buy_delayed_reply_missing_arguments(request):
+    """Delayed response to Slack reporting not enough arguments on buy command"""
+    log.debug("Missing arguments on buy request.")
+    response_content = {
+        "text": "*ERRO!* Estás a ser totó... \n*Utilização*: ```/compra <utilizador de destino> <quantia> <descrição>```"
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_no_team(request):
+    """Delayed response to Slack reporting that user has no team."""
+    response_content = {
+        "text": "*Ainda não te encontras numa equipa!* Só podes fazer compras se fizeres parte de uma equipa.\nEntra numa equipa com o comando: `/entrar`\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_no_user_arg(request):
+    """Delayed response to Slack reporting that first arg is not a user."""
+    response_content = {
+        "text": "*Erro!* Deves indicar o utilizador de destino.\nUtilização: `/compra @user quantia descrição`"
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_destination_himself(request):
+    """Delayed response to Slack reporting that destination is the owner user."""
+    response_content = {
+        "text": "*Erro!* Não podes dar dinheiro a ti próprio :thinking_face:"
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_destination_no_team(request):
+    """Delayed response to Slack reporting that destination user has no team."""
+    response_content = {
+        "text": "*O destinatário ainda não tem equipa!*\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_destination_same_team(request):
+    """Delayed response to Slack reporting that destination user is in the same team as origin."""
+    response_content = {
+        "text": "*O destinatário está na tua equipa!*\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_invalid_value(request):
+    """Delayed response to Slack reporting that the amount is invalid."""
+    response_content = {
+        "text": "*Erro!* O valor introduzido é inválido!\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_not_enough_money(request):
+    """Delayed response to Slack reporting that the user doesn't have enough money."""
+    response_content = {
+        "text": "*Erro!* Não tens dinheiro suficiente!\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id())
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def buy_delayed_reply_success(request, destination_slack_user_id):
+    """Delayed response to Slack reporting that a transaction was successfull."""
+    response_content = {
+        "text": "*Sucesso!* A tua transferência para o {} foi realizada com sucesso!"
+        .format(get_slack_user_tag(destination_slack_user_id))
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
 def default_error():
     """Immediate default response to report an error."""
     response.add_header("Content-Type", "application/json")
@@ -210,3 +342,11 @@ def send_delayed_response(url, content):
     except requests.exceptions.RequestException as ex:
         log.error("Error while POSTing data to Slack: {}".format(ex))
         raise exceptions.POSTRequestError("Could not perform request: {}".format(ex))
+
+def get_slack_user_tag(slack_user_id):
+    try:
+        slack_user_name = database.get_slack_name(slack_user_id)
+        return "<@{}|{}>".format(slack_user_id, slack_user_name)
+    except exceptions.QueryDatabaseError as ex:
+        log.warn("Failed to get destination Slack tag: {}".format(ex))
+        return None

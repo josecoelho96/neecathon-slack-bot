@@ -41,3 +41,12 @@ CREATE TABLE IF NOT EXISTS teams (
     team_name TEXT,
     balance NUMERIC(10, 4)
 );
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    origin_user_id UUID,
+    destination_user_id UUID,
+    amount NUMERIC(10, 4),
+    description TEXT
+);

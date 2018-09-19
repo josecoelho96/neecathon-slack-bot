@@ -12,3 +12,6 @@ class POSTRequestError(Exception):
 
 class QueryDatabaseError(Exception):
     """Raise when a database query can't be done."""
+
+class FloatParseError(Exception):
+    """Raise when a a string can not be converted to float."""

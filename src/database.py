@@ -8,7 +8,7 @@ from definitions import INITIAL_TEAM_BALANCE
 
 common.setup_logger()
 
-def connect():
+def connect(autocommit = True):
     """Connects to a PostgreSQL database and returns a connection."""
     log.debug("Connecting to database...")
     try:
@@ -16,10 +16,10 @@ def connect():
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USERNAME"),
             password=os.getenv("DB_PASSWORD"),
-            host="db",
+            host=os.getenv("DB_HOST"),
             port="5432"
         )
-        conn.autocommit = True
+        conn.autocommit = autocommit
         log.debug("Connected to database.")
         return conn
     except Exception as e:
@@ -420,6 +420,179 @@ def get_users_balance(user_slack_id):
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
         else:
             result = cursor.fetchone()
+            cursor.close()
+            db_connection.close()
+            return result
+
+def users_with_different_team(slack_user_id_1, slack_user_id_2):
+    """Checks if two users are in different teams."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check for users teams: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT COUNT(DISTINCT team)
+            FROM public.users
+            WHERE slack_id IN (%s, %s)
+            """
+        data = (
+            slack_user_id_1, slack_user_id_2,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Failed to check if two users are in the same team: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result == 2
+
+def user_has_enough_credit(slack_user_id, amount):
+    """Checks if a user has enough credit."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check if a user has enough credit: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (
+                SELECT
+                FROM teams
+                WHERE team_id IN (
+                    SELECT team
+                    FROM public.users
+                    WHERE slack_id=%s
+                )
+                AND balance > %s
+            )
+            """
+        data = (
+            slack_user_id, amount,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check if a user has enough credit: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def perform_buy(origin_slack_user_id, destination_slack_user_id, amount, description):
+    """Performs a shop operation between the two users."""
+    try:
+        db_connection = connect(False)
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check if a user has enough credit: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string_1 = """
+            UPDATE teams
+            SET balance = balance - %s
+            WHERE team_id IN (
+                SELECT team
+                FROM users
+                WHERE slack_id = %s
+            )
+            """
+        data_1 = (
+            amount, origin_slack_user_id
+        )
+
+        sql_string_2 = """
+            UPDATE teams
+            SET balance = balance + %s
+            WHERE team_id IN (
+                SELECT team
+                FROM users
+                WHERE slack_id = %s
+            )
+            """
+        data_2 = (
+            amount, destination_slack_user_id
+        )
+
+        sql_string_3 = """
+            INSERT INTO transactions (
+                origin_user_id,
+                destination_user_id,
+                amount, description
+            )
+            SELECT origin.user_id, destination.user_id, %s, %s
+            FROM (
+                SELECT user_id
+                FROM users
+                WHERE slack_id=%s
+            ) origin
+            CROSS JOIN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id=%s
+            ) destination
+            """
+        data_3 = (
+            amount, description, origin_slack_user_id, destination_slack_user_id
+        )
+
+        try:
+            cursor.execute(sql_string_1, data_1)
+            cursor.execute(sql_string_2, data_2)
+            cursor.execute(sql_string_3, data_3)
+        except Exception as ex:
+            log.error("Couldn't perform transaction operations: {}".format(ex))
+            cursor.close()
+            db_connection.rollback()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database operations: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.commit()
+            db_connection.close()
+
+def get_slack_name(slack_user_id):
+    """ Gets the slack name of a user."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get user slack details: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT slack_name
+            FROM users
+            WHERE slack_id = %s
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get slack user name: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
             cursor.close()
             db_connection.close()
             return result

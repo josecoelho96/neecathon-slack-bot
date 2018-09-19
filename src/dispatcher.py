@@ -9,6 +9,7 @@ import exceptions
 import uuid
 import random
 import string
+import re
 
 common.setup_logger()
 
@@ -34,6 +35,8 @@ def general_dispatcher():
             join_team_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["CHECK_BALANCE"]:
             check_balance_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["BUY"]:
+            buy_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -249,6 +252,168 @@ def check_balance_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
 
+def buy_dispatcher(request):
+    """Dispatcher to buy requests/commands."""
+    log.debug("Buy request.")
+
+    # Check if args are present
+    request_args = get_request_args(request["text"])
+    log.debug(request_args)
+
+    if not request_args or len(request_args) < 3:
+        log.warn("Bad format on command: '{}': Not enough arguments."
+            .format(request["command"])
+        )
+        try:
+            database.save_request_log(request, False, "Not enough arguments.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.buy_delayed_reply_missing_arguments(request)
+        return
+
+    # Check if user is in a team
+    log.debug("Checking if user is in a team.")
+    try:
+        if not database.user_has_team(request["user_id"]):
+            # User has no team
+            log.debug("User has no team.")
+            responder.buy_delayed_reply_no_team(request)
+            try:
+                database.save_request_log(request, False, "User has no team.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User team search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user's team search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    # User has a team
+    destination_slack_user_id = get_slack_user_id_from_arg(request_args[0])
+    if not destination_slack_user_id:
+        # User not present
+        log.debug("No user was retrieved.")
+        responder.buy_delayed_reply_no_user_arg(request)
+        try:
+            database.save_request_log(request, False, "Destination user not given.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+    log.info("Destination: {}".format(destination_slack_user_id))
+
+    # Check if destination is valid (exists and has a team, not the same user and not in the same team)
+    if request["user_id"] == destination_slack_user_id:
+        log.warn("User tried to give money to himself.")
+        responder.buy_delayed_reply_destination_himself(request)
+        try:
+            database.save_request_log(request, False, "Destination user is the donor itself.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+
+    try:
+        if not database.user_has_team(destination_slack_user_id):
+            # Destination user has no team
+            log.debug("Destination user has no team.")
+            responder.buy_delayed_reply_destination_no_team(request)
+            try:
+                database.save_request_log(request, False, "Destination user has no team.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User team search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform destination user's team search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    try:
+        log.debug("Checking origin and destination teams.")
+        if not database.users_with_different_team(destination_slack_user_id, request["user_id"]):
+            log.warn("Users in same team.")
+            responder.buy_delayed_reply_destination_same_team(request)
+            try:
+                database.save_request_log(request, False, "Destination user is in the same team as origin user.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Origin and destination users teams check failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform origin and destination users teams check.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    # Parse transaction value
+    try:
+        transaction_amount = parse_transaction_amount(request_args[1])
+    except exceptions.FloatParseError as ex:
+        log.critical("Failed to parse value to float.")
+        try:
+            database.save_request_log(request, False, "Could not perform amount value parsing.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.buy_delayed_reply_invalid_value(request)
+        return
+
+    # Check if value is positive
+    if transaction_amount <= 0:
+        log.error("Non positive transaction amount.")
+        try:
+            database.save_request_log(request, False, "Non positive transaction amount.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.buy_delayed_reply_invalid_value(request)
+        return
+
+    log.debug("Checking if user has enough credit.")
+    try:
+        if not database.user_has_enough_credit(request["user_id"], transaction_amount):
+            log.info("User does not have enough credit.")
+            try:
+                database.save_request_log(request, False, "Not enough money.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.buy_delayed_reply_not_enough_money(request)
+            return
+    except exceptions.QueryDatabaseError:
+        log.critical("Could not verify users balance: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform origin balance check.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    # Update both teams balances and register transaction
+    log.debug("Do the transaction.")
+    try:
+        description = parse_transaction_description(request_args[2:])
+        database.perform_buy(request["user_id"], destination_slack_user_id, transaction_amount, description)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Failed to perform transaction: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform transaction.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+    else:
+        log.debug("Transaction done.")
+        try:
+            database.save_request_log(request, True, "Transaction succeeded.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.buy_delayed_reply_success(request, destination_slack_user_id)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""
@@ -271,3 +436,25 @@ def generate_random_code(n = 4):
 
 def generate_uuid4():
     return str(uuid.uuid4())
+
+def get_request_args(args_str):
+    return args_str.split()
+
+def get_slack_user_id_from_arg(arg):
+    regex = r"(?<=@)(.*?)(?=\|)"
+    matches = re.search(regex, arg)
+    if matches:
+        return matches.group(1)
+    else:
+        log.warn("No match was found for user.")
+        return None
+
+def parse_transaction_amount(amount_str):
+    try:
+        return float(amount_str)
+    except Exception as ex:
+        log.critical("Can not parse transaction value to float: {}".format(ex))
+        raise exceptions.FloatParseError("Failed to convert string to float.")
+
+def parse_transaction_description(description_list):
+    return " ".join(description_list)
