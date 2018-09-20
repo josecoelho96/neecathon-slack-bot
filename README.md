@@ -16,12 +16,17 @@ TODO: Join the user to channels.
 ```./compra [@user] [qtd] [description]``` - Allows to buy something from another user.
 TODO: Posts a message to channels.
 
-## To be added
+
 ```./movimentos <qtd>``` - List transactions. \
 This command can be used by either users and admins. \
 If the user has a team, list the last `qtd` transactions of his team. \
+**TODO:** \
 If performed by an admin, list the last `qtd` transactions of all teams. \
 An admin can add the `team-id` as a argument to view the transactions of only one team.
+
+
+## To be added
+
 
 
 ```./ver-equipas``` - List all teams. \
