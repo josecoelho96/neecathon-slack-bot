@@ -37,6 +37,8 @@ def general_dispatcher():
             check_balance_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["BUY"]:
             buy_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_TRANSACTIONS"]:
+            list_transactions_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -277,7 +279,7 @@ def buy_dispatcher(request):
         if not database.user_has_team(request["user_id"]):
             # User has no team
             log.debug("User has no team.")
-            responder.buy_delayed_reply_no_team(request)
+            responder.delayed_reply_no_team(request)
             try:
                 database.save_request_log(request, False, "User has no team.")
             except exceptions.SaveRequestLogError:
@@ -362,7 +364,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform amount value parsing.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.buy_delayed_reply_invalid_value(request)
+        responder.delayed_reply_invalid_value(request)
         return
 
     # Check if value is positive
@@ -372,7 +374,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Non positive transaction amount.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.buy_delayed_reply_invalid_value(request)
+        responder.delayed_reply_invalid_value(request)
         return
 
     log.debug("Checking if user has enough credit.")
@@ -415,6 +417,71 @@ def buy_dispatcher(request):
             log.error("Failed to save request log on database.")
         responder.buy_delayed_reply_success(request, destination_slack_user_id)
 
+def list_transactions_dispatcher(request):
+    """Dispatcher to list transactions requests/commands."""
+    log.debug("List transactions request.")
+
+    # Check if quantity is valid
+    request_args = get_request_args(request["text"])
+
+    if not request_args:
+        transactions_quantity = 10
+    else:
+        try:
+            transactions_quantity = parse_transaction_quantity(request_args[0])
+        except exceptions.IntegerParseError as ex:
+            log.warn("Could not perform quantity parsing.")
+            transactions_quantity = 10
+
+    # Check if value is positive
+    if transactions_quantity <= 0:
+        log.error("Non positive transactions quantity.")
+        try:
+            database.save_request_log(request, False, "Non positive quantity provided.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_invalid_value(request)
+        return
+
+    # Check if user is in a team
+    log.debug("Checking if user is in a team.")
+    try:
+        if not database.user_has_team(request["user_id"]):
+            # User has no team
+            log.debug("User has no team.")
+            responder.delayed_reply_no_team(request)
+            try:
+                database.save_request_log(request, False, "User has no team.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User team search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user's team search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    try:
+        log.debug("Retrieving {} transactions from database.".format(transactions_quantity))
+        transactions = database.get_last_transactions(request["user_id"], transactions_quantity)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Transactions history lookup failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform transactions history check.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Transaction list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_transactions_delayed_reply_success(request, transactions)
+
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""
     try:
@@ -455,6 +522,13 @@ def parse_transaction_amount(amount_str):
     except Exception as ex:
         log.critical("Can not parse transaction value to float: {}".format(ex))
         raise exceptions.FloatParseError("Failed to convert string to float.")
+
+def parse_transaction_quantity(amount_str):
+    try:
+        return int(amount_str)
+    except Exception as ex:
+        log.critical("Can not parse transaction quantity to int: {}".format(ex))
+        raise exceptions.IntegerParseError("Failed to convert string to int.")
 
 def parse_transaction_description(description_list):
     return " ".join(description_list)

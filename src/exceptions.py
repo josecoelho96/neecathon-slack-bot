@@ -15,3 +15,6 @@ class QueryDatabaseError(Exception):
 
 class FloatParseError(Exception):
     """Raise when a a string can not be converted to float."""
+
+class IntegerParseError(Exception):
+    """Raise when a a string can not be converted to integer."""

@@ -6,6 +6,7 @@ import requests
 import logging as log
 import common
 import database
+import datetime
 
 common.setup_logger()
 
@@ -46,6 +47,14 @@ def confirm_buy_command_reception():
     response.add_header("Content-Type", "application/json")
     response_content = {
         "text": "Vou tratar do teu pedido de compra!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_list_transactions_command_reception():
+    """Immediate response to a list transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar os movimentos da tua equipa!",
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
@@ -199,7 +208,7 @@ def buy_delayed_reply_missing_arguments(request):
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
 
-def buy_delayed_reply_no_team(request):
+def delayed_reply_no_team(request):
     """Delayed response to Slack reporting that user has no team."""
     response_content = {
         "text": "*Ainda não te encontras numa equipa!* Só podes fazer compras se fizeres parte de uma equipa.\nEntra numa equipa com o comando: `/entrar`\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
@@ -267,7 +276,7 @@ def buy_delayed_reply_destination_same_team(request):
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
 
-def buy_delayed_reply_invalid_value(request):
+def delayed_reply_invalid_value(request):
     """Delayed response to Slack reporting that the amount is invalid."""
     response_content = {
         "text": "*Erro!* O valor introduzido é inválido!\nÉ um erro? Às vezes até os macaquinhos mais espertos se enganam :grin:\nPede ajuda no <#{}|suporte>."
@@ -301,6 +310,36 @@ def buy_delayed_reply_success(request, destination_slack_user_id):
         "text": "*Sucesso!* A tua transferência para o {} foi realizada com sucesso!"
         .format(get_slack_user_tag(destination_slack_user_id))
     }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos últimos {} movimentos da tua equipa:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        # Check if origin / destination is the user that made the request
+        if transaction[1] == request["user_id"]:
+            # I'm the origin
+            response_content["text"] += "*De:* mim | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        elif transaction[3] == request["user_id"]:
+            # I'm the destination
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* mim | *Data:* {}\n".format(transaction[1], transaction[2], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        else:
+            # I'm none of the ones above
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
     try:
         if send_delayed_response(request['response_url'], response_content):
             log.debug("Delayed message sent successfully.")
@@ -344,6 +383,7 @@ def send_delayed_response(url, content):
         raise exceptions.POSTRequestError("Could not perform request: {}".format(ex))
 
 def get_slack_user_tag(slack_user_id):
+    """Gets user information from database to build Slack like @user"""
     try:
         slack_user_name = database.get_slack_name(slack_user_id)
         return "<@{}|{}>".format(slack_user_id, slack_user_name)
