@@ -489,7 +489,7 @@ def list_transactions_dispatcher(request):
 def list_teams_dispatcher(request):
     """Dispatcher to list teams requests/commands."""
     log.debug("List teams request.")
-
+    # TODO: Change response to "No teams" if no teams were found.
     try:
         log.debug("Getting teams")
         teams = database.get_teams()
@@ -507,7 +507,7 @@ def list_teams_dispatcher(request):
 def list_teams_registration_dispatcher(request):
     """Dispatcher to list teams registrations requests/commands."""
     log.debug("List teams request.")
-
+    # TODO: Change response to "No teams" if no teams were found.
     try:
         log.debug("Getting teams registrations.")
         teams = database.get_teams_registration()
