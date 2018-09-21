@@ -685,3 +685,30 @@ def get_teams():
             cursor.close()
             db_connection.close()
             return result
+
+def get_teams_registration():
+    """ Gets the registration teams list."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get user slack details: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT team_id, team_name, entry_code
+            FROM team_registration
+        """
+        try:
+            cursor.execute(sql_string)
+        except Exception as ex:
+            log.error("Couldn't get teams list: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result

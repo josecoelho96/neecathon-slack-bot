@@ -41,6 +41,8 @@ def general_dispatcher():
             list_transactions_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_TEAMS"]:
             list_teams_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_TEAMS_REGISTRATION"]:
+            list_teams_registration_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -498,6 +500,24 @@ def list_teams_dispatcher(request):
         responder.default_error()
         try:
             database.save_request_log(request, False, "Could not perform teams list search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+
+def list_teams_registration_dispatcher(request):
+    """Dispatcher to list teams registrations requests/commands."""
+    log.debug("List teams request.")
+
+    try:
+        log.debug("Getting teams registrations.")
+        teams = database.get_teams_registration()
+        log.debug(teams)
+        responder.list_teams_registration_delayed_reply_success(request, teams)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("List teams search failed: {}".format(ex))
+        responder.default_error()
+        try:
+            database.save_request_log(request, False, "Could not perform registration teams list search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         return

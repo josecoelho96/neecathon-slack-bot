@@ -183,6 +183,33 @@ def list_teams():
             log.error("Failed to save request log.")
         return responder.unverified_origin_error()
 
+def list_teams_registration():
+    """Handler to list teams registration request."""
+    log.debug("New list teams registration request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_teams_registration_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
 
 def all_elements_on_request(request_data):
     """Check if all elements (keys) are present in the request dictionary"""
