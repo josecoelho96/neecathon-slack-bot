@@ -20,6 +20,7 @@ SLACK_COMMANDS = {
     "CHECK_BALANCE": "/saldo",
     "BUY": "/compra",
     "LIST_TRANSACTIONS": "/movimentos",
+    "LIST_TEAMS": "/ver-equipas",
 }
 
 INITIAL_TEAM_BALANCE = 200

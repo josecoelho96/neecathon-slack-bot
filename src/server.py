@@ -34,3 +34,4 @@ def define_routing(app):
     app.route(path="/check-balance", method=["POST"], callback=handlers.check_balance)
     app.route(path="/buy", method=["POST"], callback=handlers.buy)
     app.route(path="/list-transactions", method=["POST"], callback=handlers.list_transactions)
+    app.route(path="/list-teams", method=["POST"], callback=handlers.list_teams)

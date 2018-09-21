@@ -58,6 +58,14 @@ def confirm_list_transactions_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_list_teams_command_reception():
+    """Immediate response to a list teams command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar as equipas a participar!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -339,6 +347,24 @@ def list_transactions_delayed_reply_success(request, transaction_list):
             response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
 
         response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_teams_delayed_reply_success(request, teams_list):
+    """Delayed response to Slack reporting the teams list."""
+    response_content = {
+        "text": "Aqui estão as {} equipas a participar:\n".format(len(teams_list)),
+    }
+
+    for idx, team in enumerate(teams_list):
+        log.debug(team)
+        response_content["text"] += "_{}_: *Nome:* {} | *ID:* {}\n".format(idx + 1, team[1], team[0])
 
     try:
         if send_delayed_response(request['response_url'], response_content):
