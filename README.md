@@ -17,17 +17,19 @@ Allows to buy something from another user. It performs a transfer, between the c
 ### List last transactions
 `/movimentos <qty>`
 List transactions. If the user has a team, list the last `qty` transactions of his team. If the current user doesn't have a team, an error message appears stating how to join a team.
-
+### List all teams
+`/ver-equipas`
+List all teams. Provides the team name and team id of each team participating.
+### List all teams registered
+`/ver-equipas-registo`
+List all registered teams. Provides the team name and team id and entry code of each team registered.
 
 ## Current features:
 - Request origin verification/validation
 
 ## To be added
-```./ver-equipas``` - List all teams. \
-Can only be performed by admins. Used to list all teams.
 
-
-```./detalhes-equipa <team>``` \
+```./detalhes-equipa <team_id>``` \
 Can only be performed by admins. Used to list all details of a team. The `team-id` must be provided.
 
 
