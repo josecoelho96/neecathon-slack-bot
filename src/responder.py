@@ -366,6 +366,15 @@ def overloaded_error():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def unverified_origin_error():
+    """Immediate default response to an overloaded error."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "O teu pedido tem origens suspeitas...\nO teu pedido não pode ser processado.\nTenta novamente mais tarde ou pede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id()),
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def get_support_channel_id():
     """Get slack support channel id."""
     return os.getenv("SLACK_SUPPORT_CHANNEL_ID")
