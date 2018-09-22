@@ -90,6 +90,14 @@ def confirm_user_details_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_list_my_transactions_command_reception():
+    """Immediate response to a list my transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar os teus movimentos!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -490,6 +498,36 @@ def user_details_delayed_reply_success(request, user_info):
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
 
+def list_user_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made by user."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos teus últimos {} movimentos:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        # Check if origin / destination is the user that made the request
+        if transaction[1] == request["user_id"]:
+            # I'm the origin
+            response_content["text"] += "*De:* mim | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        elif transaction[3] == request["user_id"]:
+            # I'm the destination
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* mim | *Data:* {}\n".format(transaction[1], transaction[2], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        else:
+            # I'm none of the ones above
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
 def default_error():
     """Immediate default response to report an error."""
     response.add_header("Content-Type", "application/json")
@@ -530,7 +568,6 @@ def unauthorized_error(request):
             log.critical("Delayed message not sent.")
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
-
 
 def get_support_channel_id():
     """Get slack support channel id."""
