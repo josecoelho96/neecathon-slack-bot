@@ -82,6 +82,14 @@ def confirm_team_details_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_user_details_command_reception():
+    """Immediate response to a user details command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar os detalhes desse utilizador!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -442,6 +450,38 @@ def team_details_delayed_reply_success(request, details, users):
     else:
         log.debug("Team doesn't exist.")
         response_content["text"] += "Não foi encontrada nenhuma equipa com esse ID."
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def user_details_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on user details command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/detalhes [@user|user-id]`.\n Podes fornecer tanto o user pelo seu ID, bem como pela @mention.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def user_details_delayed_reply_success(request, user_info):
+    """Delayed response to Slack reporting the results of user details command."""
+
+    if user_info:
+        response_content = {
+            "text": "*Informação:*\n*Nome:* <@{}|{}> | *ID:* {} | *Equipa:* {}".format(user_info[0], user_info[1], user_info[2], user_info[3]),
+        }
+    else:
+        response_content = {
+            "text": "*Informação:* Não foi encontrado nenhum utilizador com esse ID/nome.",
+        }
     try:
         if send_delayed_response(request['response_url'], response_content):
             log.debug("Delayed message sent successfully.")

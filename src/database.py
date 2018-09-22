@@ -774,3 +774,65 @@ def get_team_users(team_id):
             cursor.close()
             db_connection.close()
             return result
+
+def get_user_details_from_slack_id(slack_id):
+    """ Gets an user details from its slack id."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get user details: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT slack_id, slack_name, user_id, team
+            FROM users
+            WHERE slack_id = %s
+        """
+        data = (
+            slack_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get user details: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()
+            cursor.close()
+            db_connection.close()
+            return result
+
+def get_user_details_from_user_id(user_id):
+    """ Gets an user details from its user id."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get user details: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT slack_id, slack_name, user_id, team
+            FROM users
+            WHERE user_id = %s
+        """
+        data = (
+            user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get user details: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()
+            cursor.close()
+            db_connection.close()
+            return result
