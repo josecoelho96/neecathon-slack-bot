@@ -10,6 +10,7 @@ import uuid
 import random
 import string
 import re
+import uuid
 
 common.setup_logger()
 
@@ -39,6 +40,14 @@ def general_dispatcher():
             buy_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_TRANSACTIONS"]:
             list_transactions_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_TEAMS"]:
+            list_teams_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_TEAMS_REGISTRATION"]:
+            list_teams_registration_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["TEAM_DETAILS"]:
+            team_details_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["USER_DETAILS"]:
+            user_details_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -482,6 +491,147 @@ def list_transactions_dispatcher(request):
             log.error("Failed to save request log on database.")
         responder.list_transactions_delayed_reply_success(request, transactions)
 
+def list_teams_dispatcher(request):
+    """Dispatcher to list teams requests/commands."""
+    log.debug("List teams request.")
+    # TODO: Change response to "No teams" if no teams were found.
+    try:
+        log.debug("Getting teams")
+        teams = database.get_teams()
+        log.debug(teams)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("List teams search failed: {}".format(ex))
+        responder.default_error()
+        try:
+            database.save_request_log(request, False, "Could not perform teams list search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Team list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_teams_delayed_reply_success(request, teams)
+
+def list_teams_registration_dispatcher(request):
+    """Dispatcher to list teams registrations requests/commands."""
+    log.debug("List teams request.")
+    # TODO: Change response to "No teams" if no teams were found.
+    try:
+        log.debug("Getting teams registrations.")
+        teams = database.get_teams_registration()
+        log.debug(teams)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("List teams search failed: {}".format(ex))
+        responder.default_error()
+        try:
+            database.save_request_log(request, False, "Could not perform registration teams list search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Registration team list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_teams_registration_delayed_reply_success(request, teams)
+
+def team_details_dispatcher(request):
+    """Dispatcher to team details requests/commands."""
+    log.debug("Team details request.")
+    # Get team_id from args
+    team_id = request["text"]
+    if not team_id:
+        # Bad usage
+        log.warn("Bad format on command given.")
+        responder.team_details_delayed_reply_bad_usage(request)
+        try:
+            database.save_request_log(request, False, "Not enough arguments.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+
+    try:
+        log.debug("Getting team details.")
+        details = database.get_team_details(team_id)
+        log.debug(details)
+        users = database.get_team_users(team_id)
+        log.debug(users)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Team details/users search failed: {}".format(ex))
+        responder.default_error()
+        try:
+            database.save_request_log(request, False, "Could not fetch team details/users from the database.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Team details collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.team_details_delayed_reply_success(request, details, users)
+
+def user_details_dispatcher(request):
+    """Dispatcher to user details requests/commands."""
+    log.debug("User details request.")
+    # Get user from args
+    args = get_request_args(request["text"])
+    if not args or len(args) > 1:
+        # Bad usage
+        log.warn("Bad format on command given.")
+        responder.user_details_delayed_reply_bad_usage(request)
+        try:
+            database.save_request_log(request, False, "Not enough arguments.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+
+    user = args[0]
+    user_id = get_slack_user_id_from_arg(user)
+    if user_id:
+        try:
+            user_info = database.get_user_details_from_slack_id(user_id)
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("User details search failed: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Could not fetch user details from the database.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
+            return
+    elif check_valid_uuid4(user):
+        try:
+            user_info = database.get_user_details_from_user_id(user)
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("User details search failed: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Could not fetch user details from the database.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
+            return
+    else:
+        log.debug("Both formats invalid.")
+        try:
+            database.save_request_log(request, False, "Invalid user_id/slack name.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.user_details_delayed_reply_bad_usage(request)
+        return
+
+    log.debug(user_info)
+    try:
+        database.save_request_log(request, True, "User details fetched.")
+    except exceptions.SaveRequestLogError:
+        log.error("Failed to save request log on database.")
+
+    responder.user_details_delayed_reply_success(request, user_info)
+
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""
     try:
@@ -532,3 +682,12 @@ def parse_transaction_quantity(amount_str):
 
 def parse_transaction_description(description_list):
     return " ".join(description_list)
+
+def check_valid_uuid4(arg):
+    try:
+        uuid.UUID(arg, version=4)
+    except ValueError:
+        log.warn("Invalid uuid4 format.")
+        return False
+    else:
+        return True

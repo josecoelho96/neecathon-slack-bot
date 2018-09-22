@@ -20,8 +20,12 @@ SLACK_COMMANDS = {
     "CHECK_BALANCE": "/saldo",
     "BUY": "/compra",
     "LIST_TRANSACTIONS": "/movimentos",
+    "LIST_TEAMS": "/ver-equipas",
+    "LIST_TEAMS_REGISTRATION": "/ver-equipas-registo",
+    "TEAM_DETAILS": "/detalhes-equipa",
+    "USER_DETAILS": "/detalhes",
 }
 
 INITIAL_TEAM_BALANCE = 200
 
-SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES = 1.0
+SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES = 60.0

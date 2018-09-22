@@ -17,27 +17,28 @@ Allows to buy something from another user. It performs a transfer, between the c
 ### List last transactions
 `/movimentos <qty>`
 List transactions. If the user has a team, list the last `qty` transactions of his team. If the current user doesn't have a team, an error message appears stating how to join a team.
-
+### List all teams
+`/ver-equipas`
+List all teams. Provides the team name and team id of each team participating.
+### List all teams registered
+`/ver-equipas-registo`
+List all registered teams. Provides the team name and team id and entry code of each team registered.
+### View team details
+`/detalhes-equipa <team_id>`
+Used to list all details of a team. The `team-id` must be provided.
+### View user details
+`/detalhes-participante <@user|user-id>`
+Used to list details of a participant. The `@user` or `user-id` must be provided.
 
 ## Current features:
 - Request origin verification/validation
 
 ## To be added
-```./ver-equipas``` - List all teams. \
-Can only be performed by admins. Used to list all teams.
-
-
-```./detalhes-equipa <team>``` \
-Can only be performed by admins. Used to list all details of a team. The `team-id` must be provided.
-
-
 ```./bug <money-change> <description>``` \
 Can only be performed by admins. Used to change all teams balances.
 
-
 ```./tornar-admin <@user>``` \
 Can only be performed by admins. Used to make `@user` an admin.
-
 
 ## Features to add
 - Auto add users to channels
@@ -45,6 +46,7 @@ Can only be performed by admins. Used to make `@user` an admin.
 - Report money receival on buy operation
 - Permissions system
 - Error codes
+- Single user transactions listing
 
 ## Problems found
 - How to create first admin.
