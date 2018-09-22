@@ -23,15 +23,16 @@ List all teams. Provides the team name and team id of each team participating.
 ### List all teams registered
 `/ver-equipas-registo`
 List all registered teams. Provides the team name and team id and entry code of each team registered.
+### View team details
+```./detalhes-equipa <team_id>``` \
+Used to list all details of a team. The `team-id` must be provided.
 
 ## Current features:
 - Request origin verification/validation
 
 ## To be added
-
-```./detalhes-equipa <team_id>``` \
-Can only be performed by admins. Used to list all details of a team. The `team-id` must be provided.
-
+```./detalhes-participante <@user>``` \
+Can only be performed by admins. Used to list all details of a participant. The `@user` must be provided.
 
 ```./bug <money-change> <description>``` \
 Can only be performed by admins. Used to change all teams balances.
@@ -47,6 +48,7 @@ Can only be performed by admins. Used to make `@user` an admin.
 - Report money receival on buy operation
 - Permissions system
 - Error codes
+- Single user transactions listing
 
 ## Problems found
 - How to create first admin.
