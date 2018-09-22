@@ -11,6 +11,8 @@ import random
 import string
 import re
 import uuid
+import security
+
 
 common.setup_logger()
 
@@ -58,6 +60,15 @@ def create_team_dispatcher(request):
     """Dispatcher to create team requests/commands."""
     log.debug("Create team request.")
     team_name = request['text']
+
+    if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
 
     if not team_name:
         log.warn("Bad format on command '{}': Not enough arguments."
@@ -495,6 +506,16 @@ def list_teams_dispatcher(request):
     """Dispatcher to list teams requests/commands."""
     log.debug("List teams request.")
     # TODO: Change response to "No teams" if no teams were found.
+
+    if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
     try:
         log.debug("Getting teams")
         teams = database.get_teams()
@@ -519,6 +540,16 @@ def list_teams_registration_dispatcher(request):
     """Dispatcher to list teams registrations requests/commands."""
     log.debug("List teams request.")
     # TODO: Change response to "No teams" if no teams were found.
+
+    if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
     try:
         log.debug("Getting teams registrations.")
         teams = database.get_teams_registration()
@@ -542,6 +573,16 @@ def list_teams_registration_dispatcher(request):
 def team_details_dispatcher(request):
     """Dispatcher to team details requests/commands."""
     log.debug("Team details request.")
+
+    if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
     # Get team_id from args
     team_id = request["text"]
     if not team_id:
@@ -579,6 +620,16 @@ def team_details_dispatcher(request):
 def user_details_dispatcher(request):
     """Dispatcher to user details requests/commands."""
     log.debug("User details request.")
+
+    if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
     # Get user from args
     args = get_request_args(request["text"])
     if not args or len(args) > 1:

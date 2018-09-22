@@ -32,6 +32,7 @@ Used to list details of a participant. The `@user` or `user-id` must be provided
 
 ## Current features:
 - Request origin verification/validation
+- Roles/Permissions
 
 ## To be added
 ```./bug <money-change> <description>``` \
@@ -44,7 +45,6 @@ Can only be performed by admins. Used to make `@user` an admin.
 - Auto add users to channels
 - Report logs to channel
 - Report money receival on buy operation
-- Permissions system
 - Error codes
 - Single user transactions listing
 
@@ -55,3 +55,6 @@ Can only be performed by admins. Used to make `@user` an admin.
 
 ## Bug list
 - ...
+
+## Small fixes
+Fix typo in SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES -> SECONDS

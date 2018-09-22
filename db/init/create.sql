@@ -50,3 +50,10 @@ CREATE TABLE IF NOT EXISTS transactions (
     amount NUMERIC(10, 4),
     description TEXT
 );
+
+CREATE TABLE IF NOT EXISTS permissions (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    user_id UUID,
+    staff_function TEXT
+)

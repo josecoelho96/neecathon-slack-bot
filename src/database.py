@@ -836,3 +836,38 @@ def get_user_details_from_user_id(user_id):
             cursor.close()
             db_connection.close()
             return result
+
+def get_user_permissions(slack_user_id):
+    """ Gets users permissions from its slack user id."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get user permissions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT staff_function
+            FROM permissions
+            WHERE permissions.user_id IN (
+                SELECT users.user_id
+                FROM users
+                WHERE users.slack_id = %s
+            )
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get user details: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result
