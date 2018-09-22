@@ -3,7 +3,7 @@ import responder
 import dispatcher
 from threading import Thread
 from bottle import request
-from definitions import SLACK_REQUEST_DATA_KEYS, SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES
+from definitions import SLACK_REQUEST_DATA_KEYS, SLACK_REQUEST_TIMESTAMP_MAX_GAP_SECONDS
 import common
 import time
 import database
@@ -279,7 +279,7 @@ def check_request_origin(request):
     if request_timestamp:
         slack_signature = request.get_header("X-Slack-Signature")
         if slack_signature:
-            if abs(float(request_timestamp) - time.time()) < SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES:
+            if abs(float(request_timestamp) - time.time()) < SLACK_REQUEST_TIMESTAMP_MAX_GAP_SECONDS:
                 # Request within gap
                 request_body = request.body.read().decode("utf-8")
                 signing_secret = bytes(os.getenv("SLACK_SIGNING_SECRET"), "utf-8")

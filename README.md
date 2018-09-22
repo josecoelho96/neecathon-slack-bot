@@ -57,4 +57,4 @@ Can only be performed by admins. Used to make `@user` an admin.
 - ...
 
 ## Small fixes
-Fix typo in SLACK_REQUEST_TIMESTAMP_MAX_GAP_MINUTES -> SECONDS
+- TBA
