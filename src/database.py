@@ -602,7 +602,7 @@ def get_last_transactions(slack_user_id, max_quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user slack details: {}".format(ex))
+        log.critical("Couldn't get last transactions: {}".format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -664,7 +664,7 @@ def get_teams():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user slack details: {}".format(ex))
+        log.critical("Couldn't get teams: {}".format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -691,7 +691,7 @@ def get_teams_registration():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user slack details: {}".format(ex))
+        log.critical("Couldn't get registration teams: {}".format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -704,6 +704,68 @@ def get_teams_registration():
             cursor.execute(sql_string)
         except Exception as ex:
             log.error("Couldn't get teams list: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def get_team_details(team_id):
+    """ Gets a team details."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get team details: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT team_id, team_name, balance
+            FROM teams
+            WHERE team_id = %s
+        """
+        data = (
+            team_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get team details: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()
+            cursor.close()
+            db_connection.close()
+            return result
+
+def get_team_users(team_id):
+    """ Gets a team users."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get team users: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT slack_id, slack_name, user_id
+            FROM users
+            WHERE team = %s
+        """
+        data = (
+            team_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get team users: {}".format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))

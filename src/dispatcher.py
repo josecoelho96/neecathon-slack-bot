@@ -43,6 +43,8 @@ def general_dispatcher():
             list_teams_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_TEAMS_REGISTRATION"]:
             list_teams_registration_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["TEAM_DETAILS"]:
+            team_details_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -494,7 +496,6 @@ def list_teams_dispatcher(request):
         log.debug("Getting teams")
         teams = database.get_teams()
         log.debug(teams)
-        responder.list_teams_delayed_reply_success(request, teams)
     except exceptions.QueryDatabaseError as ex:
         log.critical("List teams search failed: {}".format(ex))
         responder.default_error()
@@ -503,6 +504,13 @@ def list_teams_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Team list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_teams_delayed_reply_success(request, teams)
 
 def list_teams_registration_dispatcher(request):
     """Dispatcher to list teams registrations requests/commands."""
@@ -512,7 +520,6 @@ def list_teams_registration_dispatcher(request):
         log.debug("Getting teams registrations.")
         teams = database.get_teams_registration()
         log.debug(teams)
-        responder.list_teams_registration_delayed_reply_success(request, teams)
     except exceptions.QueryDatabaseError as ex:
         log.critical("List teams search failed: {}".format(ex))
         responder.default_error()
@@ -521,6 +528,46 @@ def list_teams_registration_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Registration team list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_teams_registration_delayed_reply_success(request, teams)
+
+def team_details_dispatcher(request):
+    """Dispatcher to team details requests/commands."""
+    log.debug("Team details request.")
+    # Get team_id from args
+    team_id = request["text"]
+    if not team_id:
+        # Bad usage
+        log.warn("Bad format on command given.")
+        responder.team_details_delayed_reply_bad_usage(request)
+        return
+
+    try:
+        log.debug("Getting team details.")
+        details = database.get_team_details(team_id)
+        log.debug(details)
+        users = database.get_team_users(team_id)
+        log.debug(users)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Team details/users search failed: {}".format(ex))
+        responder.default_error()
+        try:
+            database.save_request_log(request, False, "Could not fetch team details/users from the database.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        return
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Team details collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.team_details_delayed_reply_success(request, details, users)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

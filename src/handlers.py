@@ -211,6 +211,35 @@ def list_teams_registration():
             log.error("Failed to save request log.")
         return responder.unverified_origin_error()
 
+def team_details():
+    """Handler to list a team details."""
+    log.debug("New team details request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_team_details_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+
 def all_elements_on_request(request_data):
     """Check if all elements (keys) are present in the request dictionary"""
     if all(k in request_data for k in SLACK_REQUEST_DATA_KEYS):
@@ -238,6 +267,7 @@ def check_request_origin(request):
                     return False
             else:
                 log.critical("Header 'X-Slack-Request-Timestamp' value is different than handler server. Refusing request.")
+                log.debug("Header value: {} | Current timestamp: {}".format(request_timestamp, time.time()))
                 return False
         else:
             # No header

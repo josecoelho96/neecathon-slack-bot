@@ -22,6 +22,7 @@ SLACK_COMMANDS = {
     "LIST_TRANSACTIONS": "/movimentos",
     "LIST_TEAMS": "/ver-equipas",
     "LIST_TEAMS_REGISTRATION": "/ver-equipas-registo",
+    "TEAM_DETAILS": "/detalhes-equipa",
 }
 
 INITIAL_TEAM_BALANCE = 200
