@@ -29,6 +29,9 @@ Used to list all details of a team. The `team-id` must be provided.
 ### View user details
 `/detalhes-participante <@user|user-id>`
 Used to list details of a participant. The `@user` or `user-id` must be provided.
+### List last user transactions
+`/meus-movimentos <qty>`
+List user transactions. If the user has a team, list his last `qty` transactions. If the current user doesn't have a team, an error message appears stating how to join a team.
 
 ## Current features:
 - Request origin verification/validation
@@ -46,7 +49,6 @@ Can only be performed by admins. Used to make `@user` an admin.
 - Report logs to channel
 - Report money receival on buy operation
 - Error codes
-- Single user transactions listing
 
 ## Problems found
 - How to create first admin.
