@@ -517,6 +517,21 @@ def unverified_origin_error():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def unauthorized_error(request):
+    """Delayed response to Slack reporting no authorization."""
+    response_content = {
+        "text": "*NÃO PODES FAZER ISSO!*\nErro? Pede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id()),
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+
 def get_support_channel_id():
     """Get slack support channel id."""
     return os.getenv("SLACK_SUPPORT_CHANNEL_ID")
