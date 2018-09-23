@@ -46,6 +46,7 @@ Can only be performed by admins. Used to change all teams balances.
 
 ```./transacoes-equipa <team-id>``` \
 ```./transacoes-participante @user|user-id``` \
+```./ver-staff``` \
 
 ## Features to add
 - Auto add users to channels
