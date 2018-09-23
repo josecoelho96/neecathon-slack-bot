@@ -98,6 +98,14 @@ def confirm_list_my_transactions_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_change_permissions_command_reception():
+    """Immediate response to a change permissions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir alterar as permissões do utilizador!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -520,6 +528,32 @@ def list_user_transactions_delayed_reply_success(request, transaction_list):
 
         response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
 
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def change_permission_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on change permission command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/alterar-permissoes [@user] [admin|staff|remover]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def change_permission_delayed_reply_success(request):
+    """Delayed response to Slack reporting success change permission command."""
+    response_content = {
+        "text": "Boa! As permissões do utilizador foram alteradas!",
+    }
     try:
         if send_delayed_response(request['response_url'], response_content):
             log.debug("Delayed message sent successfully.")

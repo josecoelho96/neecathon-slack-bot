@@ -52,7 +52,8 @@ def general_dispatcher():
             user_details_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_MY_TRANSACTIONS"]:
             list_my_transactions_dispatcher(request)
-
+        elif request["command"] == SLACK_COMMANDS["CHANGE_PERMISSIONS"]:
+            change_permissions_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -750,6 +751,108 @@ def list_my_transactions_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.list_user_transactions_delayed_reply_success(request, transactions)
+
+def change_permissions_dispatcher(request):
+    """Dispatcher to change permissions requests/commands."""
+    log.debug("Change permissions request.")
+
+    if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
+    # Check if args are present
+    request_args = get_request_args(request["text"])
+
+    if not request_args or len(request_args) != 2:
+        log.error("Bad usage of command.")
+        try:
+            database.save_request_log(request, False, "Bad argument format.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.change_permission_delayed_reply_bad_usage(request)
+        return
+
+    slack_user_id = get_slack_user_id_from_arg(request_args[0])
+    if not slack_user_id:
+        log.error("Bad usage of command: User not found")
+        try:
+            database.save_request_log(request, False, "Bad argument format on user.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.change_permission_delayed_reply_bad_usage(request)
+        return
+
+    new_permission = request_args[1]
+    if not any(new_permission in x for x in ["admin", "staff", "remover"]):
+        log.error("Bad usage of command: New role invalid.")
+        try:
+            database.save_request_log(request, False, "Bad argument format on new permission.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.change_permission_delayed_reply_bad_usage(request)
+        return
+
+    if new_permission == "remover":
+        log.debug("Remove user from staff/admin")
+        try:
+            database.remove_user_permissions(slack_user_id)
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("User permisions removal failed: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Could not remove user permissions.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
+    else:
+        try:
+            if database.user_is_staff(slack_user_id):
+                log.debug("Update role.")
+                try:
+                    database.update_user_role(slack_user_id, new_permission)
+                except exceptions.QueryDatabaseError as ex:
+                    log.critical("User permisions update failed: {}".format(ex))
+                    try:
+                        database.save_request_log(request, False, "Could not update user permissions.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.default_error()
+                else:
+                    log.debug("User permisions updated.")
+                    try:
+                        database.save_request_log(request, True, "Updated user permissions.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.change_permission_delayed_reply_success(request)
+            else:
+                log.debug("Add to staff.")
+                try:
+                    database.add_user_to_staff(slack_user_id, new_permission)
+                except exceptions.QueryDatabaseError as ex:
+                    log.critical("User permisions update failed: {}".format(ex))
+                    try:
+                        database.save_request_log(request, False, "Could not update user permissions.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.default_error()
+                else:
+                    log.debug("User permisions updated.")
+                    try:
+                        database.save_request_log(request, True, "Updated user permissions.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.change_permission_delayed_reply_success(request)
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("User permisions check failed: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Could not check user permissions.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

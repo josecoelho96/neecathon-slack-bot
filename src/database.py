@@ -867,10 +867,13 @@ def get_user_permissions(slack_user_id):
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
         else:
-            result = cursor.fetchone()[0]
-            cursor.close()
-            db_connection.close()
-            return result
+            if cursor.rowcount > 0:
+                result = cursor.fetchone()[0]
+                cursor.close()
+                db_connection.close()
+                return result
+            else:
+                return None
 
 def get_last_user_transactions(slack_user_id, max_quantity):
     """ Gets the last transactions of a user."""
@@ -924,3 +927,141 @@ def get_last_user_transactions(slack_user_id, max_quantity):
             cursor.close()
             db_connection.close()
             return result
+
+def remove_user_permissions(slack_user_id):
+    """ Removes users permissions"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't remove user permissions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            DELETE FROM permissions
+            WHERE user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't delete user permissions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def user_is_staff(slack_user_id):
+    """ Returns True if a user is staff/admin, False otherwise"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check if user is staff: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (
+                SELECT
+                FROM permissions
+                WHERE user_id IN (
+                    SELECT user_id
+                    FROM users
+                    WHERE slack_id = %s
+                )
+            )
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check if user user is staff: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def update_user_role(slack_user_id, new_role):
+    """Updates a user (staff member) role"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't update user role: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            UPDATE permissions
+            SET staff_function = %s
+            WHERE user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+        """
+        data = (
+            new_role, slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't update user role: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def add_user_to_staff(slack_user_id, new_role):
+    """Adds a user to the staff team."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't add user to staff team: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            INSERT INTO permissions (
+                user_id,
+                staff_function
+            )
+            SELECT users.user_id, %s
+            FROM (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            ) users
+        """
+        data = (
+            new_role, slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't add user to staff team: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database insert query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
