@@ -32,6 +32,9 @@ Used to list details of a participant. The `@user` or `user-id` must be provided
 ### List last user transactions
 `/meus-movimentos <qty>`
 List user transactions. If the user has a team, list his last `qty` transactions. If the current user doesn't have a team, an error message appears stating how to join a team.
+### Change user role/add to staff
+`/alterar-permissoes <@user> <admin|staff|remover>`
+Changes the permissions of `user`, adding it to the staff crew if it wasn't on it yet. If the `remover` option is selected, the user is removed from the staff team.
 
 ## Current features:
 - Request origin verification/validation
@@ -41,8 +44,8 @@ List user transactions. If the user has a team, list his last `qty` transactions
 ```./bug <money-change> <description>``` \
 Can only be performed by admins. Used to change all teams balances.
 
-```./tornar-admin <@user>``` \
-Can only be performed by admins. Used to make `@user` an admin.
+```./transacoes-equipa <team-id>``` \
+```./transacoes-participante @user|user-id``` \
 
 ## Features to add
 - Auto add users to channels
@@ -54,6 +57,8 @@ Can only be performed by admins. Used to make `@user` an admin.
 - How to create first admin.
 - Implementation: Log levels aren't well defined.
 - IDs are not being verified as unique.
+- Users are only added to users table on join team commands, should be done always, but on every request will make this slow.
+Possible solution: Create new comand?
 
 ## Bug list
 - ...
