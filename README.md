@@ -41,8 +41,11 @@ Changes the permissions of `user`, adding it to the staff crew if it wasn't on i
 - Roles/Permissions
 
 ## To be added
-```./bug <money-change> <description>``` \
+```./hackerboy <money-change> <description>``` \
 Can only be performed by admins. Used to change all teams balances.
+
+```./hackerboy-equipa <team-id> <money-change> <description>``` \
+Can only be performed by admins. Used to change a team balance.
 
 ```./transacoes-equipa <team-id>``` \
 ```./transacoes-participante @user|user-id``` \
