@@ -41,15 +41,15 @@ List all elements in staff, along with their role and their ID. Only accessible 
 ### Hackerboy
 ```./hackerboy <money-change> <description>``` \
 Can only be performed by admins. Used to change all teams balances, either to give them money or to remove it.
+### Team Hackerboy
+```./hackerboy-equipa <team-id> <money-change> <description>``` \
+Can only be performed by admins. Used to change a team balance, either to give it money or to remove it.
 
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
 
 ## To be added
-```./hackerboy-equipa <team-id> <money-change> <description>``` \
-Can only be performed by admins. Used to change a team balance.
-
 ```./transacoes-equipa <team-id>``` \
 ```./transacoes-participante @user|user-id``` \
 ```./transacoes-todas``` \
