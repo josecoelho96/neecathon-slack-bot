@@ -50,13 +50,16 @@ Lists the last `qty` transactions made/received by `@user`
 ### List given team transactions
 `/transacoes-equipa <team-id> <qty>`
 Lists the last `qty` transactions made/received by users in team with id `team-id`
+### List all transactions
+`/transacoes-todas <qty>`
+Lists the last `qty` transactions made/received in the entire application.
 
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
 
-## To be added
-```./transacoes-todas``` \
+## Commands to add
+- TBD
 
 ## Features to add
 - Auto add users to channels
