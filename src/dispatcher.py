@@ -85,7 +85,7 @@ def create_team_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -120,9 +120,10 @@ def create_team_dispatcher(request):
     try:
         if database.team_name_available(team_name):
             log.debug("Team name available.")
-            [team_id, team_entry_code] = generate_team_details()
+            team_entry_code = generate_team_entry_code()
             try:
-                database.save_team_registration(team_id, team_name, team_entry_code)
+                new_team_id = database.save_team_registration(team_name, team_entry_code)
+                log.debug(new_team_id)
             except exceptions.QueryDatabaseError:
                 log.critical("Could not save new team registration.")
                 try:
@@ -136,7 +137,7 @@ def create_team_dispatcher(request):
                     database.save_request_log(request, True, "New team registration saved successfully.")
                 except exceptions.SaveRequestLogError:
                     log.error("Failed to save request log on database.")
-                responder.create_team_delayed_reply_success(request, team_id, team_name, team_entry_code)
+                responder.create_team_delayed_reply_success(request, new_team_id, team_name, team_entry_code)
         else:
             log.debug("Team name already picked.")
             try:
@@ -161,7 +162,7 @@ def join_team_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -277,7 +278,7 @@ def check_balance_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -336,7 +337,7 @@ def buy_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -514,7 +515,7 @@ def list_transactions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -594,7 +595,7 @@ def list_teams_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -644,7 +645,7 @@ def list_teams_registration_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -694,7 +695,7 @@ def team_details_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -756,7 +757,7 @@ def user_details_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -837,7 +838,7 @@ def list_my_transactions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -917,7 +918,7 @@ def change_permissions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1034,7 +1035,7 @@ def list_staff_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1079,7 +1080,7 @@ def hackerboy_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1211,7 +1212,7 @@ def hackerboy_team_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1353,7 +1354,7 @@ def list_user_transactions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1458,7 +1459,7 @@ def list_team_transactions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1562,7 +1563,7 @@ def list_all_transactions_dispatcher(request):
         if not database.user_exists(request['user_id']):
             log.debug("New user.")
             # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+            database.save_user(request["user_id"], request["user_name"])
     except exceptions.QueryDatabaseError as ex:
         log.critical("User search failed: {}".format(ex))
         try:
@@ -1637,14 +1638,21 @@ def add_request_to_queue(request):
     else:
         return True
 
-def generate_team_details():
-    """ Generates and returns a team ID and team entry code."""
-    team_id = generate_uuid4()
-    team_entry_code = "-".join([generate_random_code(), generate_random_code()])
-    return [team_id, team_entry_code]
+def generate_team_entry_code():
+    """ Generates and returns a team entry code."""
+    # Exception will be caught by caller function
+    entry_codes = database.get_all_entry_codes()
+    log.debug("Entry codes: {}".format(entry_codes))
+    new_entry_code = generate_random_code()
+    log.debug("New entry code: {}".format(new_entry_code))
+    while new_entry_code in entry_codes:
+        new_entry_code = generate_random_code()
+        log.debug("New entry code: {}".format(new_entry_code))
 
-def generate_random_code(n = 4):
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return new_entry_code
+
+def generate_random_code(n = 4, rep = 3, sep = '-'):
+    return sep.join(["".join(random.choices(string.ascii_uppercase + string.digits, k=n)) for _ in range(rep)])
 
 def generate_uuid4():
     return str(uuid.uuid4())

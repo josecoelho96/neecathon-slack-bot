@@ -42,8 +42,8 @@ def save_request_log(request, success, description):
                 team_domain,
                 channel_id,
                 channel_name,
-                user_id,
-                user_name,
+                slack_user_id,
+                slack_user_name,
                 command,
                 command_text,
                 response_url,
@@ -111,7 +111,7 @@ def team_name_available(team_name):
             db_connection.close()
             return result
 
-def save_team_registration(team_id, team_name, entry_code):
+def save_team_registration(team_name, entry_code):
     """Saves a team registration entry - Name, ID and Entry code."""
     try:
         db_connection = connect()
@@ -123,13 +123,12 @@ def save_team_registration(team_id, team_name, entry_code):
 
         sql_string = """
             INSERT INTO team_registration (
-                team_id,
                 team_name,
                 entry_code
-            ) VALUES (%s, %s, %s)
+            ) VALUES (%s, %s)
+            RETURNING team_id
             """
         data = (
-            team_id,
             team_name,
             entry_code
         )
@@ -142,8 +141,10 @@ def save_team_registration(team_id, team_name, entry_code):
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database insertion query: {}".format(ex))
         else:
+            result = cursor.fetchone()[0]
             cursor.close()
             db_connection.close()
+            return result
 
 def user_exists(slack_id):
     """Checks if a user exists in the database."""
@@ -179,7 +180,7 @@ def user_exists(slack_id):
             db_connection.close()
             return result
 
-def save_user(slack_id, slack_name, user_id):
+def save_user(slack_id, slack_name):
     """Saves a user exists in the database."""
     try:
         db_connection = connect()
@@ -192,14 +193,12 @@ def save_user(slack_id, slack_name, user_id):
         sql_string = """
             INSERT INTO users (
                 slack_id,
-                slack_name,
-                user_id
-            ) VALUES (%s, %s, %s)
+                slack_name
+            ) VALUES (%s, %s)
             """
         data = (
             slack_id,
             slack_name,
-            user_id
         )
 
         try:
@@ -1393,6 +1392,34 @@ def get_last_all_transactions(max_quantity):
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
         else:
             result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def get_all_entry_codes():
+    """ Gets all entry codes."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get entry codes: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        # NOTE: Multiple operations, change to having more info on the table?
+        sql_string = """
+            SELECT entry_code
+            FROM team_registration
+        """
+        try:
+            cursor.execute(sql_string)
+        except Exception as ex:
+            log.error("Couldn't get entry codes transactions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r[0] for r in cursor.fetchall()]
             cursor.close()
             db_connection.close()
             return result
