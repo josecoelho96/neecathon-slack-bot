@@ -54,6 +54,8 @@ def general_dispatcher():
             list_my_transactions_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["CHANGE_PERMISSIONS"]:
             change_permissions_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_STAFF"]:
+            list_staff_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -842,7 +844,7 @@ def change_permissions_dispatcher(request):
                 else:
                     log.debug("User permisions updated.")
                     try:
-                        database.save_request_log(request, True, "Updated user permissions.")
+                        database.save_request_log(request, True, "User added to staff.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
                     responder.change_permission_delayed_reply_success(request)
@@ -853,6 +855,36 @@ def change_permissions_dispatcher(request):
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
             responder.default_error()
+
+def list_staff_dispatcher(request):
+    """Dispatcher to list staff requests/commands."""
+    log.debug("List staff request.")
+
+    if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
+    try:
+        staff_team = database.get_staff_team()
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Staff team lookup failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not get staff team.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+    else:
+        log.debug("Staf team retrieved.")
+        try:
+            database.save_request_log(request, True, "Staff team retrieved.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_staff_delayed_reply_success(request, staff_team)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

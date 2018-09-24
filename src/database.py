@@ -1065,3 +1065,36 @@ def add_user_to_staff(slack_user_id, new_role):
         else:
             cursor.close()
             db_connection.close()
+
+def get_staff_team():
+    """Returns all staff members."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get staff team: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT
+                permissions.user_id,
+                permissions.staff_function,
+                users.slack_id,
+                users.slack_name
+            FROM permissions
+            INNER JOIN users
+            ON users.user_id = permissions.user_id
+        """
+        try:
+            cursor.execute(sql_string)
+        except Exception as ex:
+            log.error("Couldn't get staff team: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
