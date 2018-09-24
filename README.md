@@ -44,14 +44,18 @@ Can only be performed by admins. Used to change all teams balances, either to gi
 ### Team Hackerboy
 ```./hackerboy-equipa <team-id> <money-change> <description>``` \
 Can only be performed by admins. Used to change a team balance, either to give it money or to remove it.
+### List given user transactions
+`/transacoes-participante @user|user-id <qty>`
+Lists the last `qty` transactions made/received by `@user`
+### List given team transactions
+`/transacoes-equipa <team-id> <qty>`
+Lists the last `qty` transactions made/received by users in team with id `team-id`
 
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
 
 ## To be added
-```./transacoes-equipa <team-id>``` \
-```./transacoes-participante @user|user-id``` \
 ```./transacoes-todas``` \
 
 ## Features to add
