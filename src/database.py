@@ -1352,3 +1352,47 @@ def get_last_team_transactions(team_id, max_quantity):
             cursor.close()
             db_connection.close()
             return result
+
+def get_last_all_transactions(max_quantity):
+    """ Gets the last transactions of the entire server."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get last transactions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        # NOTE: Multiple operations, change to having more info on the table?
+        sql_string = """
+            SELECT
+                transactions.created_at,
+                u1.slack_id AS origin_slack_id,
+                u1.slack_name AS origin_slack_name,
+                u2.slack_id AS destination_slack_id,
+                u2.slack_name AS destination_slack_name,
+                transactions.amount,
+                transactions.description
+            FROM transactions
+            INNER JOIN users u1
+            ON transactions.origin_user_id = u1.user_id
+            INNER JOIN users u2
+            ON transactions.destination_user_id = u2.user_id
+            ORDER BY created_at DESC
+            LIMIT %s
+        """
+        data = (
+            max_quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get last transactions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result

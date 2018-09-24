@@ -45,3 +45,4 @@ def define_routing(app):
     app.route(path="/hackerboy-team", method=["POST"], callback=handlers.hackerboy_team)
     app.route(path="/list-user-transactions", method=["POST"], callback=handlers.list_user_transactions)
     app.route(path="/list-team-transactions", method=["POST"], callback=handlers.list_team_transactions)
+    app.route(path="/list-all-transactions", method=["POST"], callback=handlers.list_all_transactions)

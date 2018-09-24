@@ -31,6 +31,8 @@ SLACK_COMMANDS = {
     "HACKERBOY_TEAM": "/hackerboy-equipa",
     "LIST_USER_TRANSACTIONS": "/transacoes-participante",
     "LIST_TEAM_TRANSACTIONS": "/transacoes-equipa",
+    "LIST_ALL_TRANSACTIONS": "/transacoes-todas",
+
 }
 
 INITIAL_TEAM_BALANCE = 200

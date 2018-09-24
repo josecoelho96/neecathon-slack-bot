@@ -64,9 +64,15 @@ def general_dispatcher():
             list_user_transactions_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_TEAM_TRANSACTIONS"]:
             list_team_transactions_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_ALL_TRANSACTIONS"]:
+            list_all_transactions_dispatcher(request)
         else:
             log.critical("Invalid request command.")
-
+            try:
+                database.save_request_log(request, False, "Command dispatcher not found.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
         log.debug("Process request done.")
         requests_queue.task_done()
 
@@ -1316,6 +1322,65 @@ def list_team_transactions_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.list_team_transactions_delayed_reply_success(request, transactions)
+
+def list_all_transactions_dispatcher(request):
+    """Dispatcher to list all transactions requests/commands."""
+    log.debug("List all transactions request.")
+
+    if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
+    # Check if arguments are good
+    request_args = get_request_args(request["text"])
+
+    if not request_args or len(request_args) < 1:
+        log.error("Bad usage of command.")
+        try:
+            database.save_request_log(request, False, "Bad argument format.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_all_transactions_delayed_reply_bad_usage(request)
+        return
+
+    try:
+        transactions_quantity = parse_transaction_quantity(request_args[0])
+    except exceptions.IntegerParseError as ex:
+        log.warn("Could not perform quantity parsing.")
+        transactions_quantity = 10
+
+    # Check if value is positive
+    if transactions_quantity <= 0:
+        log.error("Non positive transactions quantity.")
+        try:
+            database.save_request_log(request, False, "Non positive quantity provided.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_invalid_value(request)
+        return
+
+    try:
+        log.debug("Retrieving {} transactions from database.".format(transactions_quantity))
+        transactions = database.get_last_all_transactions(transactions_quantity)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Transactions history lookup failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform transactions history check.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Transaction list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_all_transactions_delayed_reply_success(request, transactions)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

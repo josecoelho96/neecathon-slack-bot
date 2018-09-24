@@ -146,6 +146,14 @@ def confirm_list_team_transactions_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_list_all_transactions_command_reception():
+    """Immediate response to a list all transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou buscar TODOS os registos.",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -793,6 +801,39 @@ def list_team_transactions_delayed_reply_success(request, transaction_list):
     """Delayed response to Slack reporting the last quantity transactions made a team."""
     response_content = {
         "text": "Aqui tens os detalhes dos últimos {} movimentos da equipa:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_all_transactions_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on list all transactions command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/transacoes-todas [quantidade]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_all_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made overall."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos últimos {} movimentos da NEECathon:\n".format(len(transaction_list)),
     }
 
     for idx, transaction in enumerate(transaction_list):
