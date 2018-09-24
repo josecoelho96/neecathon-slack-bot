@@ -867,7 +867,532 @@ def get_user_permissions(slack_user_id):
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
         else:
+            if cursor.rowcount > 0:
+                result = cursor.fetchone()[0]
+                cursor.close()
+                db_connection.close()
+                return result
+            else:
+                return None
+
+def get_last_user_transactions(slack_user_id, max_quantity):
+    """ Gets the last transactions of a user."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get last user transactions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT
+                transactions.created_at,
+                u1.slack_id AS origin_slack_id,
+                u1.slack_name AS origin_slack_name,
+                u2.slack_id AS destination_slack_id,
+                u2.slack_name AS destination_slack_name,
+                transactions.amount,
+                transactions.description
+            FROM transactions
+            INNER JOIN users u1
+            ON transactions.origin_user_id = u1.user_id
+            INNER JOIN users u2
+            ON transactions.destination_user_id = u2.user_id
+            WHERE transactions.origin_user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+            OR transactions.destination_user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+            ORDER BY created_at DESC
+            LIMIT %s
+        """
+        data = (
+            slack_user_id, slack_user_id, max_quantity
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get last user transactions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def remove_user_permissions(slack_user_id):
+    """ Removes users permissions"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't remove user permissions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            DELETE FROM permissions
+            WHERE user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't delete user permissions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def user_is_staff(slack_user_id):
+    """ Returns True if a user is staff/admin, False otherwise"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check if user is staff: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (
+                SELECT
+                FROM permissions
+                WHERE user_id IN (
+                    SELECT user_id
+                    FROM users
+                    WHERE slack_id = %s
+                )
+            )
+        """
+        data = (
+            slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check if user user is staff: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
             result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def update_user_role(slack_user_id, new_role):
+    """Updates a user (staff member) role"""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't update user role: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            UPDATE permissions
+            SET staff_function = %s
+            WHERE user_id IN (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            )
+        """
+        data = (
+            new_role, slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't update user role: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def add_user_to_staff(slack_user_id, new_role):
+    """Adds a user to the staff team."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't add user to staff team: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            INSERT INTO permissions (
+                user_id,
+                staff_function
+            )
+            SELECT users.user_id, %s
+            FROM (
+                SELECT user_id
+                FROM users
+                WHERE slack_id = %s
+            ) users
+        """
+        data = (
+            new_role, slack_user_id,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't add user to staff team: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database insert query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def get_staff_team():
+    """Returns all staff members."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get staff team: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT
+                permissions.user_id,
+                permissions.staff_function,
+                users.slack_id,
+                users.slack_name
+            FROM permissions
+            INNER JOIN users
+            ON users.user_id = permissions.user_id
+        """
+        try:
+            cursor.execute(sql_string)
+        except Exception as ex:
+            log.error("Couldn't get staff team: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def all_teams_balance_above(quantity):
+    """Returns True if all teams have at least quantity balance."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check for teams balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (SELECT *
+            FROM teams
+            WHERE balance < %s
+            )
+        """
+        data = (
+            quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check for teams balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return not result
+
+def alter_money_to_all_teams(quantity):
+    """Updates the balance of all teams."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't update teams balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            UPDATE teams
+            SET balance = balance + %s
+        """
+        data = (
+            quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't update teams balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def save_reward(request, amount, description):
+    """Saves a reward given to all teams."""
+
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.error("Could not save reward onto database: {}".format(ex))
+        raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            INSERT INTO rewards (
+                given_by,
+                amount,
+                destination,
+                description
+            ) SELECT users.user_id, %s, 'ALL TEAMS', %s
+            FROM users
+            WHERE slack_id = %s
+            """
+        data = (
+            amount,
+            description,
+            request['user_id'],
+        )
+
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Could not save reward log onto database: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def team_balance_above(team_id, quantity):
+    """Returns True if a team balance is above quantity."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check for team balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (
+                SELECT
+               FROM TEAMS
+                WHERE team_id = %s
+                AND balance >= %s
+            )
+        """
+        data = (
+            team_id, quantity
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check for team balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def alter_money_to_team(team_id, quantity):
+    """Updates the balance of one team."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't update team balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            UPDATE teams
+            SET balance = balance + %s
+            WHERE team_id = %s
+        """
+        data = (
+            quantity, team_id
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't update teams balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def save_reward_team(request, team_id, amount, description):
+    """Saves a reward given to a team."""
+
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.error("Could not save reward onto database: {}".format(ex))
+        raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            INSERT INTO rewards (
+                given_by,
+                amount,
+                destination,
+                description
+            ) SELECT users.user_id, %s, %s, %s
+            FROM users
+            WHERE slack_id = %s
+            """
+        data = (
+            amount,
+            team_id,
+            description,
+            request['user_id'],
+        )
+
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Could not save reward log onto database: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def get_last_team_transactions(team_id, max_quantity):
+    """ Gets the last transactions of a team."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get last transactions of a team: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        # NOTE: Multiple operations, change to having more info on the table?
+        sql_string = """
+            SELECT
+                transactions.created_at,
+                u1.slack_id AS origin_slack_id,
+                u1.slack_name AS origin_slack_name,
+                u2.slack_id AS destination_slack_id,
+                u2.slack_name AS destination_slack_name,
+                transactions.amount,
+                transactions.description
+            FROM transactions
+            INNER JOIN users u1
+            ON transactions.origin_user_id = u1.user_id
+            INNER JOIN users u2
+            ON transactions.destination_user_id = u2.user_id
+            WHERE transactions.origin_user_id IN (
+                SELECT users.user_id
+                FROM users
+                WHERE users.team = %s
+            )
+            OR transactions.destination_user_id IN (
+                SELECT users.user_id
+                FROM users
+                WHERE users.team = %s
+            )
+            ORDER BY created_at DESC
+            LIMIT %s
+        """
+        data = (
+            team_id, team_id, max_quantity
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get last transactions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
+
+def get_last_all_transactions(max_quantity):
+    """ Gets the last transactions of the entire server."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get last transactions: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        # NOTE: Multiple operations, change to having more info on the table?
+        sql_string = """
+            SELECT
+                transactions.created_at,
+                u1.slack_id AS origin_slack_id,
+                u1.slack_name AS origin_slack_name,
+                u2.slack_id AS destination_slack_id,
+                u2.slack_name AS destination_slack_name,
+                transactions.amount,
+                transactions.description
+            FROM transactions
+            INNER JOIN users u1
+            ON transactions.origin_user_id = u1.user_id
+            INNER JOIN users u2
+            ON transactions.destination_user_id = u2.user_id
+            ORDER BY created_at DESC
+            LIMIT %s
+        """
+        data = (
+            max_quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't get last transactions: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r for r in cursor.fetchall()]
             cursor.close()
             db_connection.close()
             return result

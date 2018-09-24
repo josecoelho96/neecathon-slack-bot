@@ -29,29 +29,50 @@ Used to list all details of a team. The `team-id` must be provided.
 ### View user details
 `/detalhes-participante <@user|user-id>`
 Used to list details of a participant. The `@user` or `user-id` must be provided.
+### List last user transactions
+`/meus-movimentos <qty>`
+List user transactions. If the user has a team, list his last `qty` transactions. If the current user doesn't have a team, an error message appears stating how to join a team.
+### Change user role/add to staff
+`/alterar-permissoes <@user> <admin|staff|remover>`
+Changes the permissions of `user`, adding it to the staff crew if it wasn't on it yet. If the `remover` option is selected, the user is removed from the staff team.
+### List staff elements
+`/ver-staff`
+List all elements in staff, along with their role and their ID. Only accessible to staff elements.
+### Hackerboy
+```./hackerboy <money-change> <description>``` \
+Can only be performed by admins. Used to change all teams balances, either to give them money or to remove it.
+### Team Hackerboy
+```./hackerboy-equipa <team-id> <money-change> <description>``` \
+Can only be performed by admins. Used to change a team balance, either to give it money or to remove it.
+### List given user transactions
+`/transacoes-participante @user|user-id <qty>`
+Lists the last `qty` transactions made/received by `@user`
+### List given team transactions
+`/transacoes-equipa <team-id> <qty>`
+Lists the last `qty` transactions made/received by users in team with id `team-id`
+### List all transactions
+`/transacoes-todas <qty>`
+Lists the last `qty` transactions made/received in the entire application.
 
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
 
-## To be added
-```./bug <money-change> <description>``` \
-Can only be performed by admins. Used to change all teams balances.
-
-```./tornar-admin <@user>``` \
-Can only be performed by admins. Used to make `@user` an admin.
+## Commands to add
+- TBD
 
 ## Features to add
 - Auto add users to channels
 - Report logs to channel
 - Report money receival on buy operation
 - Error codes
-- Single user transactions listing
 
 ## Problems found
 - How to create first admin.
 - Implementation: Log levels aren't well defined.
 - IDs are not being verified as unique.
+- Users are only added to users table on join team commands, should be done always, but on every request will make this slow.
+Possible solution: Create new comand?
 
 ## Bug list
 - ...

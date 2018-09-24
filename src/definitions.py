@@ -24,6 +24,15 @@ SLACK_COMMANDS = {
     "LIST_TEAMS_REGISTRATION": "/ver-equipas-registo",
     "TEAM_DETAILS": "/detalhes-equipa",
     "USER_DETAILS": "/detalhes",
+    "LIST_MY_TRANSACTIONS": "/meus-movimentos",
+    "CHANGE_PERMISSIONS": "/alterar-permissoes",
+    "LIST_STAFF": "/ver-staff",
+    "HACKERBOY": "/hackerboy",
+    "HACKERBOY_TEAM": "/hackerboy-equipa",
+    "LIST_USER_TRANSACTIONS": "/transacoes-participante",
+    "LIST_TEAM_TRANSACTIONS": "/transacoes-equipa",
+    "LIST_ALL_TRANSACTIONS": "/transacoes-todas",
+
 }
 
 INITIAL_TEAM_BALANCE = 200

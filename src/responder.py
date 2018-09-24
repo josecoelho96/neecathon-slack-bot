@@ -90,6 +90,70 @@ def confirm_user_details_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_list_my_transactions_command_reception():
+    """Immediate response to a list my transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar os teus movimentos!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_change_permissions_command_reception():
+    """Immediate response to a change permissions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir alterar as permissões do utilizador!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_list_staff_command_reception():
+    """Immediate response to a list staff command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou tratar de ir buscar a lista de elementos na _staff_!",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_hackerboy_command_reception():
+    """Immediate response to a hackerboy command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vamos lá assustar esta malta toda :ghost:",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_hackerboy_team_command_reception():
+    """Immediate response to a hackerboy command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vamos lá assustar esta equipa! :ghost:",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_list_user_transactions_command_reception():
+    """Immediate response to a list user transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou buscar os registos desse utilizador.",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_list_team_transactions_command_reception():
+    """Immediate response to a list team transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou buscar os registos dessa equipa.",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+def confirm_list_all_transactions_command_reception():
+    """Immediate response to a list all transactions command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vou buscar TODOS os registos.",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -490,6 +554,302 @@ def user_details_delayed_reply_success(request, user_info):
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
 
+def list_user_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made by user."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos teus últimos {} movimentos:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        # Check if origin / destination is the user that made the request
+        if transaction[1] == request["user_id"]:
+            # I'm the origin
+            response_content["text"] += "*De:* mim | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        elif transaction[3] == request["user_id"]:
+            # I'm the destination
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* mim | *Data:* {}\n".format(transaction[1], transaction[2], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        else:
+            # I'm none of the ones above
+            response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def change_permission_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on change permission command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/alterar-permissoes [@user] [admin|staff|remover]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def change_permission_delayed_reply_success(request):
+    """Delayed response to Slack reporting success change permission command."""
+    response_content = {
+        "text": "Boa! As permissões do utilizador foram alteradas!",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_staff_delayed_reply_success(request, staff_team):
+    """Delayed response to Slack reporting the staff team."""
+    response_content = {
+        "text": "Aqui tens a lista de elementos na staff!\n",
+    }
+
+    for element in staff_team:
+        log.debug(element)
+        response_content["text"] += "*Nome:* <@{}|{}> | *Função:* {} | *ID:* {}\n".format(element[2], element[3], element[1], element[0])
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on hackerboy command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/hackerboy [quantia] [descricao]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_not_enough_money_on_some_teams(request, amount):
+    """Delayed response to Slack reporting some teams will get a negative amount on hackerboy command."""
+    response_content = {
+        "text": "Erro. Alguma equipas irão ficar com saldo negativo ao realizares um 'roubo' de {}".format(amount),
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_success(request, amount):
+    """Delayed response to Slack reporting success hackerboy command."""
+
+    if amount > 0:
+        response_content = {
+            "text": "Boa! Transferimos {} para todas as equipas!".format(amount),
+        }
+    elif amount < 0:
+        response_content = {
+            "text": "Muahahah. Roubámos {} de todas as equipas!".format(amount),
+        }
+    else:
+        response_content = {
+            "text": "Enfim, mais valia estares quieto.... 0 + alguma coisa não faz grande diferença...",
+        }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_team_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on team hackerboy command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/hackerboy-equipa [id-equipa] [quantia] [descricao]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_team_delayed_reply_not_enough_money(request, amount):
+    """Delayed response to Slack reporting that a team will get a negative amount on  team hackerboy command."""
+    response_content = {
+        "text": "Erro. A equipa irá ficar com saldo negativo ao realizares um 'roubo' de {}".format(amount),
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_team_delayed_reply_success(request, amount):
+    """Delayed response to Slack reporting success team hackerboy command."""
+
+    if amount > 0:
+        response_content = {
+            "text": "Boa! Transferimos {} para a equipa!".format(amount),
+        }
+    elif amount < 0:
+        response_content = {
+            "text": "Muahahah. Roubámos {} da quipa!".format(amount),
+        }
+    else:
+        response_content = {
+            "text": "Enfim, mais valia estares quieto.... 0 + alguma coisa não faz grande diferença...",
+        }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_user_transactions_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on list user transactions command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/transacoes-participante @user [quantidade]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def delayed_reply_user_has_no_team(request):
+    """Delayed response to Slack reporting that an user has no team."""
+    response_content = {
+        "text": "*ERRO:* O jogador não se encontra numa equipa."
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_to_admin_user_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made an user."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos últimos {} movimentos do jogador:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_team_transactions_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on list team transactions command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/transacoes-equipa <id-equipa> [quantidade]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_team_transactions_delayed_reply_team_not_existant(request):
+    """Delayed response to Slack reporting a non existant team on list team transactions command."""
+    response_content = {
+        "text": "*ERRO:* Essa equipa não existe."
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_team_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made a team."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos últimos {} movimentos da equipa:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_all_transactions_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on list all transactions command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/transacoes-todas [quantidade]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def list_all_transactions_delayed_reply_success(request, transaction_list):
+    """Delayed response to Slack reporting the last quantity transactions made overall."""
+    response_content = {
+        "text": "Aqui tens os detalhes dos últimos {} movimentos da NEECathon:\n".format(len(transaction_list)),
+    }
+
+    for idx, transaction in enumerate(transaction_list):
+        log.debug(transaction)
+        response_content["text"] += "_Movimento {} de {}:_\n".format(idx + 1, len(transaction_list))
+        response_content["text"] += "*De:* <@{}|{}> | *Para:* <@{}|{}> | *Data:* {}\n".format(transaction[1], transaction[2], transaction[3], transaction[4], datetime.datetime.strftime(transaction[0], "%Y-%m-%d %H:%M:%S"))
+        response_content["text"] += "*Valor:* {:.2f} | *Descrição:* {}\n\n".format(transaction[5], transaction[6])
+
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
 def default_error():
     """Immediate default response to report an error."""
     response.add_header("Content-Type", "application/json")
@@ -530,7 +890,6 @@ def unauthorized_error(request):
             log.critical("Delayed message not sent.")
     except exceptions.POSTRequestError:
         log.critical("Failed to send delayed message to Slack.")
-
 
 def get_support_channel_id():
     """Get slack support channel id."""

@@ -267,6 +267,230 @@ def user_details():
             log.error("Failed to save request log.")
         return responder.unverified_origin_error()
 
+def list_my_transactions():
+    """Handler to list my transactions request."""
+    log.debug("New list my transactions request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_my_transactions_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def change_permissions():
+    """Handler to change permissions request."""
+    log.debug("New change permissions request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_change_permissions_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def list_staff():
+    """Handler to list staff request."""
+    log.debug("New list staff request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_staff_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def hackerboy():
+    """Handler to hackerboy request."""
+    log.debug("New hackerboy request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_hackerboy_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def hackerboy_team():
+    """Handler to hackerboy team request."""
+    log.debug("New hackerboy team request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_hackerboy_team_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def list_user_transactions():
+    """Handler to list an user transactions request."""
+    log.debug("New list user transactions request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_user_transactions_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def list_team_transactions():
+    """Handler to list a team transactions request."""
+    log.debug("New list team transactions request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_team_transactions_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
+def list_all_transactions():
+    """Handler to list all transactions request."""
+    log.debug("New list all transactions request.")
+    request_data = dict(request.POST)
+
+    if check_request_origin(request):
+        if all_elements_on_request(request_data):
+            # Procceed with request.
+            log.debug("Request with correct fields, add to queue.")
+            if dispatcher.add_request_to_queue(request_data):
+                # Request was added to queue
+                return responder.confirm_list_all_transactions_command_reception()
+            else:
+                # Request wasn't added to queue
+                return responder.overloaded_error()
+        else:
+            # Inform user of incomplete request.
+            log.warn("Request with invalid payload was sent.")
+            return responder.default_error()
+    else:
+        # Could not validate user request
+        log.error("Slack request origin verification failed.")
+        try:
+            database.save_request_log(request_data, False, "Unverified origin.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log.")
+        return responder.unverified_origin_error()
+
 def all_elements_on_request(request_data):
     """Check if all elements (keys) are present in the request dictionary"""
     if all(k in request_data for k in SLACK_REQUEST_DATA_KEYS):
