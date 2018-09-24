@@ -28,6 +28,7 @@ SLACK_COMMANDS = {
     "CHANGE_PERMISSIONS": "/alterar-permissoes",
     "LIST_STAFF": "/ver-staff",
     "HACKERBOY": "/hackerboy",
+    "HACKERBOY_TEAM": "/hackerboy-equipa",
 }
 
 INITIAL_TEAM_BALANCE = 200

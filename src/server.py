@@ -42,3 +42,4 @@ def define_routing(app):
     app.route(path="/change-permissions", method=["POST"], callback=handlers.change_permissions)
     app.route(path="/list-staff", method=["POST"], callback=handlers.list_staff)
     app.route(path="/hackerboy", method=["POST"], callback=handlers.hackerboy)
+    app.route(path="/hackerboy-team", method=["POST"], callback=handlers.hackerboy_team)
