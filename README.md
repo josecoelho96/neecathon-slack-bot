@@ -38,21 +38,21 @@ Changes the permissions of `user`, adding it to the staff crew if it wasn't on i
 ### List staff elements
 `/ver-staff`
 List all elements in staff, along with their role and their ID. Only accessible to staff elements.
-
+### Hackerboy
+```./hackerboy <money-change> <description>``` \
+Can only be performed by admins. Used to change all teams balances, either to give them money or to remove it.
 
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
 
 ## To be added
-```./hackerboy <money-change> <description>``` \
-Can only be performed by admins. Used to change all teams balances.
-
 ```./hackerboy-equipa <team-id> <money-change> <description>``` \
 Can only be performed by admins. Used to change a team balance.
 
 ```./transacoes-equipa <team-id>``` \
 ```./transacoes-participante @user|user-id``` \
+```./transacoes-todas``` \
 
 ## Features to add
 - Auto add users to channels
