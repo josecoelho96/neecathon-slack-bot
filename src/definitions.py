@@ -27,6 +27,7 @@ SLACK_COMMANDS = {
     "LIST_MY_TRANSACTIONS": "/meus-movimentos",
     "CHANGE_PERMISSIONS": "/alterar-permissoes",
     "LIST_STAFF": "/ver-staff",
+    "HACKERBOY": "/hackerboy",
 }
 
 INITIAL_TEAM_BALANCE = 200

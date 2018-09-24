@@ -114,6 +114,15 @@ def confirm_list_staff_command_reception():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def confirm_hackerboy_command_reception():
+    """Immediate response to a hackerboy command."""
+    response.add_header("Content-Type", "application/json")
+    response_content = {
+        "text": "Vamos lá assustar esta malta toda :ghost:",
+    }
+    return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
+
+
 def create_team_delayed_reply_missing_arguments(request):
     """Delayed response to Slack reporting not enough arguments on create team command"""
     log.debug("Missing arguments on create team request.")
@@ -579,6 +588,55 @@ def list_staff_delayed_reply_success(request, staff_team):
     for element in staff_team:
         log.debug(element)
         response_content["text"] += "*Nome:* <@{}|{}> | *Função:* {} | *ID:* {}\n".format(element[2], element[3], element[1], element[0])
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_bad_usage(request):
+    """Delayed response to Slack reporting a bad usage on hackerboy command."""
+    response_content = {
+        "text": "Má utilização do comando! Utilização: `/hackerboy [quantia] [descricao]`.",
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_not_enough_money_on_some_teams(request, amount):
+    """Delayed response to Slack reporting some teams will get a negative amount on hackerboy command."""
+    response_content = {
+        "text": "Erro. Alguma equipas irão ficar com saldo negativo ao realizares um 'roubo' de {}".format(amount),
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
+def hackerboy_delayed_reply_success(request, amount):
+    """Delayed response to Slack reporting success hackerboy command."""
+
+    if amount > 0:
+        response_content = {
+            "text": "Boa! Transferimos {} para todas as equipas!".format(amount),
+        }
+    elif amount < 0:
+        response_content = {
+            "text": "Muahahah. Roubámos {} de todas as equipas!".format(amount),
+        }
+    else:
+        response_content = {
+            "text": "Enfim, mais valia estares quieto.... 0 + alguma coisa não faz grande diferença...",
+        }
     try:
         if send_delayed_response(request['response_url'], response_content):
             log.debug("Delayed message sent successfully.")

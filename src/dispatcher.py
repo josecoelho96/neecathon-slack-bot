@@ -56,6 +56,8 @@ def general_dispatcher():
             change_permissions_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["LIST_STAFF"]:
             list_staff_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["HACKERBOY"]:
+            hackerboy_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -885,6 +887,123 @@ def list_staff_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.list_staff_delayed_reply_success(request, staff_team)
+
+def hackerboy_dispatcher(request):
+    """Dispatcher to hackerboy requests/commands."""
+    log.debug("List staff request.")
+
+    if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
+    # Check if args are present
+    request_args = get_request_args(request["text"])
+
+    if not request_args or len(request_args) < 2:
+        log.error("Bad usage of command.")
+        try:
+            database.save_request_log(request, False, "Bad argument format.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.hackerboy_delayed_reply_bad_usage(request)
+        return
+
+    # Parse value to change
+    try:
+        change_amount = parse_transaction_amount(request_args[0])
+    except exceptions.FloatParseError as ex:
+        log.critical("Failed to parse value to float.")
+        try:
+            database.save_request_log(request, False, "Could not perform amount value parsing.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_invalid_value(request)
+        return
+
+    log.debug(change_amount)
+    # Check if all teams will have a positive amount of money
+    if change_amount > 0:
+        # add money to all teams
+        try:
+            database.alter_money_to_all_teams(change_amount)
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("Failed to add money to all teams: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Failed to add money to all teams.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
+        else:
+            log.debug("Money on all teams updated.")
+            try:
+                description = parse_transaction_description(request_args[1:])
+                database.save_reward(request, change_amount, description)
+            except exceptions.QueryDatabaseError:
+                log.error("Failed to save reward record.")
+            try:
+                database.save_request_log(request, True, "Balance updated.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.hackerboy_delayed_reply_success(request, change_amount)
+
+    elif change_amount < 0:
+        try:
+            if database.all_teams_balance_above(abs(change_amount)):
+                # Enough money on all teams
+                try:
+                    database.alter_money_to_all_teams(change_amount)
+                except exceptions.QueryDatabaseError as ex:
+                    log.critical("Balance update on teams failed: {}".format(ex))
+                    try:
+                        database.save_request_log(request, False, "Could not update teams balance.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.default_error()
+                else:
+                    log.debug("Money on all teams updated.")
+                    try:
+                        description = parse_transaction_description(request_args[1:])
+                        database.save_reward(request, change_amount, description)
+                    except exceptions.QueryDatabaseError:
+                        log.error("Failed to save reward record.")
+                    try:
+                        database.save_request_log(request, True, "Balance updated.")
+                    except exceptions.SaveRequestLogError:
+                        log.error("Failed to save request log on database.")
+                    responder.hackerboy_delayed_reply_success(request, change_amount)
+            else:
+                # Not all teams have enough
+                log.debug("Not all teams have enough money.")
+                try:
+                    database.save_request_log(request, False, "Not enough money on some teams.")
+                except exceptions.SaveRequestLogError:
+                    log.error("Failed to save request log on database.")
+                responder.hackerboy_delayed_reply_not_enough_money_on_some_teams(request, change_amount)
+                return
+        except exceptions.QueryDatabaseError as ex:
+            log.critical("Balance check on teams failed: {}".format(ex))
+            try:
+                database.save_request_log(request, False, "Could not check teams balance.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            responder.default_error()
+    else:
+        log.debug("Hackerboy requested a balance update of 0.")
+        try:
+            database.save_request_log(request, True, "Balance updated (no change, value was 0).")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        try:
+            description = parse_transaction_description(request_args[1:])
+            database.save_reward(request, change_amount, description)
+        except exceptions.QueryDatabaseError:
+            log.error("Failed to save reward record.")
+        responder.hackerboy_delayed_reply_success(request, change_amount)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""

@@ -57,3 +57,12 @@ CREATE TABLE IF NOT EXISTS permissions (
     user_id UUID,
     staff_function TEXT
 )
+
+CREATE TABLE IF NOT EXISTS rewards (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT NOW(),
+    given_by UUID,
+    amount NUMERIC(10, 4),
+    destination TEXT,
+    description TEXT
+)

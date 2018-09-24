@@ -1098,3 +1098,101 @@ def get_staff_team():
             cursor.close()
             db_connection.close()
             return result
+
+def all_teams_balance_above(quantity):
+    """Returns True if all teams have at least quantity balance."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't check for teams balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            SELECT EXISTS (SELECT *
+            FROM teams
+            WHERE balance < %s
+            )
+        """
+        data = (
+            quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't check for teams balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = cursor.fetchone()[0]
+            cursor.close()
+            db_connection.close()
+            return not result
+
+def alter_money_to_all_teams(quantity):
+    """Updates the balance of all teams."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't update teams balance: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            UPDATE teams
+            SET balance = balance + %s
+        """
+        data = (
+            quantity,
+        )
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Couldn't update teams balance: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
+
+def save_reward(request, amount, description):
+    """Saves a reward given to all teams."""
+
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.error("Could not save reward onto database: {}".format(ex))
+        raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+
+        sql_string = """
+            INSERT INTO rewards (
+                given_by,
+                amount,
+                destination,
+                description
+            ) SELECT users.user_id, %s, 'ALL TEAMS', %s
+            FROM users
+            WHERE slack_id = %s
+            """
+        data = (
+            amount,
+            description,
+            request['user_id'],
+        )
+
+        try:
+            cursor.execute(sql_string, data)
+        except Exception as ex:
+            log.error("Could not save reward log onto database: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
+        else:
+            cursor.close()
+            db_connection.close()
