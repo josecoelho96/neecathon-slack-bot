@@ -79,6 +79,22 @@ def general_dispatcher():
 def create_team_dispatcher(request):
     """Dispatcher to create team requests/commands."""
     log.debug("Create team request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     team_name = request['text']
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
@@ -139,17 +155,6 @@ def create_team_dispatcher(request):
 def join_team_dispatcher(request):
     """Dispatcher to join team requests/commands."""
     log.debug("Join team request.")
-    team_entry_code = request["text"]
-    if not team_entry_code:
-        log.warn("Bad format on command '{}': Not enough arguments."
-            .format(request['command'])
-        )
-        try:
-            database.save_request_log(request, False, "Not enough arguments.")
-        except exceptions.SaveRequestLogError:
-            log.error("Failed to save request log on database.")
-        responder.join_team_delayed_reply_missing_arguments(request)
-        return
 
     # Check if user is in the users table
     try:
@@ -164,6 +169,18 @@ def join_team_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.default_error()
+        return
+
+    team_entry_code = request["text"]
+    if not team_entry_code:
+        log.warn("Bad format on command '{}': Not enough arguments."
+            .format(request['command'])
+        )
+        try:
+            database.save_request_log(request, False, "Not enough arguments.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.join_team_delayed_reply_missing_arguments(request)
         return
 
     # Check if user has a team
@@ -254,6 +271,22 @@ def join_team_dispatcher(request):
 def check_balance_dispatcher(request):
     """Dispatcher to check balance requests/commands."""
     log.debug("Check balance request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     # First, check if user is in a team
     try:
         if not database.user_has_team(request["user_id"]):
@@ -297,6 +330,21 @@ def check_balance_dispatcher(request):
 def buy_dispatcher(request):
     """Dispatcher to buy requests/commands."""
     log.debug("Buy request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     # Check if args are present
     request_args = get_request_args(request["text"])
@@ -461,6 +509,21 @@ def list_transactions_dispatcher(request):
     """Dispatcher to list transactions requests/commands."""
     log.debug("List transactions request.")
 
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
 
@@ -525,6 +588,22 @@ def list_transactions_dispatcher(request):
 def list_teams_dispatcher(request):
     """Dispatcher to list teams requests/commands."""
     log.debug("List teams request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     # TODO: Change response to "No teams" if no teams were found.
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
@@ -559,6 +638,22 @@ def list_teams_dispatcher(request):
 def list_teams_registration_dispatcher(request):
     """Dispatcher to list teams registrations requests/commands."""
     log.debug("List teams request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     # TODO: Change response to "No teams" if no teams were found.
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
@@ -593,6 +688,21 @@ def list_teams_registration_dispatcher(request):
 def team_details_dispatcher(request):
     """Dispatcher to team details requests/commands."""
     log.debug("Team details request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -640,6 +750,21 @@ def team_details_dispatcher(request):
 def user_details_dispatcher(request):
     """Dispatcher to user details requests/commands."""
     log.debug("User details request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -707,6 +832,21 @@ def list_my_transactions_dispatcher(request):
     """Dispatcher to list my transactions requests/commands."""
     log.debug("List transactions request.")
 
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
 
@@ -771,6 +911,21 @@ def list_my_transactions_dispatcher(request):
 def change_permissions_dispatcher(request):
     """Dispatcher to change permissions requests/commands."""
     log.debug("Change permissions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -874,6 +1029,21 @@ def list_staff_dispatcher(request):
     """Dispatcher to list staff requests/commands."""
     log.debug("List staff request.")
 
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
         try:
@@ -903,6 +1073,21 @@ def list_staff_dispatcher(request):
 def hackerboy_dispatcher(request):
     """Dispatcher to hackerboy requests/commands."""
     log.debug("List staff request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1020,6 +1205,21 @@ def hackerboy_dispatcher(request):
 def hackerboy_team_dispatcher(request):
     """Dispatcher to hackerboy team requests/commands."""
     log.debug("Hackerboy team request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1148,6 +1348,21 @@ def list_user_transactions_dispatcher(request):
     """Dispatcher to list an user transactions requests/commands."""
     log.debug("List given user transactions request.")
 
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
         try:
@@ -1238,6 +1453,21 @@ def list_team_transactions_dispatcher(request):
     """Dispatcher to list a team transactions requests/commands."""
     log.debug("List given team transactions request.")
 
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
         try:
@@ -1326,6 +1556,21 @@ def list_team_transactions_dispatcher(request):
 def list_all_transactions_dispatcher(request):
     """Dispatcher to list all transactions requests/commands."""
     log.debug("List all transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
