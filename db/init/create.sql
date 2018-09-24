@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS teams (
     team_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     team_name TEXT,
-    balance NUMERIC(10, 4)
+    balance NUMERIC(10, 4),
+    slack_channel_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS transactions (

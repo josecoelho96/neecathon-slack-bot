@@ -859,6 +859,20 @@ def default_error():
     }
     return json.dumps(response_content, ensure_ascii=False).encode("utf-8")
 
+def delayed_reply_default_error(request):
+    """Delayed default response to report an error."""
+    response_content = {
+        "text": "O teu pedido não pode ser processado :speak_no_evil:\n Tenta novamente mais tarde ou pede ajuda no <#{}|suporte>."
+        .format(get_support_channel_id()),
+    }
+    try:
+        if send_delayed_response(request['response_url'], response_content):
+            log.debug("Delayed message sent successfully.")
+        else:
+            log.critical("Delayed message not sent.")
+    except exceptions.POSTRequestError:
+        log.critical("Failed to send delayed message to Slack.")
+
 def overloaded_error():
     """Immediate default response to an overloaded error."""
     response.add_header("Content-Type", "application/json")
