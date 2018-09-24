@@ -35,6 +35,10 @@ List user transactions. If the user has a team, list his last `qty` transactions
 ### Change user role/add to staff
 `/alterar-permissoes <@user> <admin|staff|remover>`
 Changes the permissions of `user`, adding it to the staff crew if it wasn't on it yet. If the `remover` option is selected, the user is removed from the staff team.
+### List staff elements
+`/ver-staff`
+List all elements in staff, along with their role and their ID. Only accessible to staff elements.
+
 
 ## Current features:
 - Request origin verification/validation
@@ -49,7 +53,6 @@ Can only be performed by admins. Used to change a team balance.
 
 ```./transacoes-equipa <team-id>``` \
 ```./transacoes-participante @user|user-id``` \
-```./ver-staff``` \
 
 ## Features to add
 - Auto add users to channels
