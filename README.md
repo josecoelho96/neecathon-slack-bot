@@ -39,13 +39,13 @@ Changes the permissions of `user`, adding it to the staff crew if it wasn't on i
 `/ver-staff`
 List all elements in staff, along with their role and their ID. Only accessible to staff elements.
 ### Hackerboy
-```./hackerboy <money-change> <description>``` \
+`/hackerboy <money-change> <description>`
 Can only be performed by admins. Used to change all teams balances, either to give them money or to remove it.
 ### Team Hackerboy
-```./hackerboy-equipa <team-id> <money-change> <description>``` \
+`/hackerboy-equipa <team-id> <money-change> <description>`
 Can only be performed by admins. Used to change a team balance, either to give it money or to remove it.
 ### List given user transactions
-`/transacoes-participante @user|user-id <qty>`
+`/transacoes-participante @user <qty>`
 Lists the last `qty` transactions made/received by `@user`
 ### List given team transactions
 `/transacoes-equipa <team-id> <qty>`
