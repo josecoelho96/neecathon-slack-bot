@@ -71,8 +71,7 @@ Lists the last `qty` transactions made/received in the entire application.
 - How to create first admin.
 - Implementation: Log levels aren't well defined.
 - IDs are not being verified as unique.
-- Users are only added to users table on join team commands, should be done always, but on every request will make this slow.
-Possible solution: Create new comand?
+- FIXED: ~~Users are only added to users table on join team commands, should be done always, but on every request will make this slow.~~
 
 ## Bug list
 - ...
