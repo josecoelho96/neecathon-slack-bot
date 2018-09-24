@@ -60,6 +60,8 @@ def general_dispatcher():
             hackerboy_dispatcher(request)
         elif request["command"] == SLACK_COMMANDS["HACKERBOY_TEAM"]:
             hackerboy_team_dispatcher(request)
+        elif request["command"] == SLACK_COMMANDS["LIST_USER_TRANSACTIONS"]:
+            list_user_transactions_dispatcher(request)
         else:
             log.critical("Invalid request command.")
 
@@ -1133,6 +1135,96 @@ def hackerboy_team_dispatcher(request):
         except exceptions.QueryDatabaseError:
             log.error("Failed to save reward record.")
         responder.hackerboy_team_delayed_reply_success(request, change_amount)
+
+def list_user_transactions_dispatcher(request):
+    """Dispatcher to list an user transactions requests/commands."""
+    log.debug("List given user transactions request.")
+
+    if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
+        log.error("User has no permission to execute this command.")
+        try:
+            database.save_request_log(request, False, "Unauthorized.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.unauthorized_error(request)
+        return
+
+    # Check if arguments are good
+    request_args = get_request_args(request["text"])
+
+    if not request_args or len(request_args) < 2:
+        log.error("Bad usage of command.")
+        try:
+            database.save_request_log(request, False, "Bad argument format.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_user_transactions_delayed_reply_bad_usage(request)
+        return
+
+    slack_user_id = get_slack_user_id_from_arg(request_args[0])
+    if not slack_user_id:
+        log.error("Bad usage of command: User not found")
+        try:
+            database.save_request_log(request, False, "Bad argument format on user.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_user_transactions_delayed_reply_bad_usage(request)
+        return
+
+    try:
+        transactions_quantity = parse_transaction_quantity(request_args[1])
+    except exceptions.IntegerParseError as ex:
+        log.warn("Could not perform quantity parsing.")
+        transactions_quantity = 10
+
+    # Check if value is positive
+    if transactions_quantity <= 0:
+        log.error("Non positive transactions quantity.")
+        try:
+            database.save_request_log(request, False, "Non positive quantity provided.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_invalid_value(request)
+        return
+
+    # Check if user is in a team
+    log.debug("Checking if user is in a team.")
+    try:
+        if not database.user_has_team(slack_user_id):
+            # User has no team
+            log.debug("User has no team.")
+            responder.delayed_reply_user_has_no_team(request)
+            try:
+                database.save_request_log(request, False, "User has no team.")
+            except exceptions.SaveRequestLogError:
+                log.error("Failed to save request log on database.")
+            return
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User team search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user's team search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+        return
+
+    try:
+        log.debug("Retrieving {} transactions from database.".format(transactions_quantity))
+        transactions = database.get_last_user_transactions(slack_user_id, transactions_quantity)
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("Transactions history lookup failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform transactions history check.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.default_error()
+    else:
+        log.debug("Retrieved data.")
+        try:
+            database.save_request_log(request, True, "Transaction list collected.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.list_to_admin_user_transactions_delayed_reply_success(request, transactions)
 
 def add_request_to_queue(request):
     """ Add a request to the requests queue."""
