@@ -1344,6 +1344,15 @@ def hackerboy_team_dispatcher(request):
                 database.save_request_log(request, True, "Balance updated.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
+            try:
+                team_channel_id = database.get_team_slack_group_id(team_id)
+            except exceptions.QueryDatabaseError as ex:
+                log.error("Failed to get team channel id.")
+            else:
+                if slackapi.post_hackerboy_action_team(team_channel_id, change_amount):
+                    log.debug("Team was reported on their private channel.")
+                else:
+                    log.error("Failed to report hackerboy command to a team.")
             responder.hackerboy_team_delayed_reply_success(request, change_amount)
     elif change_amount < 0:
         try:
@@ -1369,6 +1378,15 @@ def hackerboy_team_dispatcher(request):
                         database.save_request_log(request, True, "Balance updated.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
+                    try:
+                        team_channel_id = database.get_team_slack_group_id(team_id)
+                    except exceptions.QueryDatabaseError as ex:
+                        log.error("Failed to get team channel id.")
+                    else:
+                        if slackapi.post_hackerboy_action_team(team_channel_id, change_amount):
+                            log.debug("Team was reported on their private channel.")
+                        else:
+                            log.error("Failed to report hackerboy command to a team.")
                     responder.hackerboy_team_delayed_reply_success(request, change_amount)
             else:
                 # Not all teams have enough
