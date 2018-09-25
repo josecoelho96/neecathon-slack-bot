@@ -522,6 +522,19 @@ def buy_dispatcher(request):
         return
     else:
         log.debug("Transaction done.")
+        # Post message on destination team channel
+        try:
+            channel_id = database.get_team_slack_group_id_from_slack_user_id(destination_slack_user_id)
+        except exceptions.QueryDatabaseError as ex:
+            log.error("Could not get channel of destination user team: {}".format(ex))
+        else:
+            if channel_id:
+                if slackapi.post_transaction_received_message(channel_id, transaction_amount, request["user_id"]):
+                    log.debug("Transaction announced on destination team.")
+                else:
+                    log.error("Error POSTing message on destinations channel.")
+            else:
+                log.error("Team channel not found on database.")
         try:
             database.save_request_log(request, True, "Transaction succeeded.")
         except exceptions.SaveRequestLogError:
