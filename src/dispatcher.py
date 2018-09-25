@@ -1187,7 +1187,7 @@ def hackerboy_dispatcher(request):
             except exceptions.QueryDatabaseError as ex:
                 log.error("Failed to get all teams channel ids.")
             else:
-                if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount):
+                if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount, description):
                     log.debug("All teams were reported on their private channels.")
                 else:
                     log.error("Failed to report hackerboy command to some/all teams.")
@@ -1223,7 +1223,7 @@ def hackerboy_dispatcher(request):
                     except exceptions.QueryDatabaseError as ex:
                         log.error("Failed to get all teams channel ids.")
                     else:
-                        if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount):
+                        if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount, description):
                             log.debug("All teams were reported on their private channels.")
                         else:
                             log.error("Failed to report hackerboy command to some/all teams.")
@@ -1349,7 +1349,7 @@ def hackerboy_team_dispatcher(request):
             except exceptions.QueryDatabaseError as ex:
                 log.error("Failed to get team channel id.")
             else:
-                if slackapi.post_hackerboy_action_team(team_channel_id, change_amount):
+                if slackapi.post_hackerboy_action_team(team_channel_id, change_amount, description):
                     log.debug("Team was reported on their private channel.")
                 else:
                     log.error("Failed to report hackerboy command to a team.")
@@ -1383,7 +1383,7 @@ def hackerboy_team_dispatcher(request):
                     except exceptions.QueryDatabaseError as ex:
                         log.error("Failed to get team channel id.")
                     else:
-                        if slackapi.post_hackerboy_action_team(team_channel_id, change_amount):
+                        if slackapi.post_hackerboy_action_team(team_channel_id, change_amount, description):
                             log.debug("Team was reported on their private channel.")
                         else:
                             log.error("Failed to report hackerboy command to a team.")
