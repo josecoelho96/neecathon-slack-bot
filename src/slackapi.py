@@ -85,3 +85,18 @@ def post_message(channel_id, message):
         req_response = r.json()
         log.debug(req_response)
         return r.status_code == 200 and req_response["ok"] == True
+
+def post_hackerboy_action_general(team_channel_ids, amount_changed):
+    ret_val = True
+    for channel_id in team_channel_ids:
+        ret_val = ret_val and post_hackerboy_action_team(channel_id, amount_changed)
+    return ret_val
+
+def post_hackerboy_action_team(team_channel_id, amount_changed):
+    """ Posts a message on a team channel reporting a balance change."""
+    if amount_changed > 0:
+        message = "O _hackerboy_ é bondoso! Receberam uma transferência de {}!".format(amount_changed)
+    else:
+        message = "O _hackerboy_ decidiu revoltar-se! Perderam {} do vosso saldo!".format(amount_changed)
+
+    return post_message(team_channel_id, message)

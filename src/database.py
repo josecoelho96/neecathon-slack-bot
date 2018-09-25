@@ -1494,3 +1494,29 @@ def get_team_slack_group_id_from_slack_user_id(slack_user_id):
             cursor.close()
             db_connection.close()
             return results
+
+def get_all_teams_slack_group_id():
+    """ Gets the slack group id of all teams."""
+    try:
+        db_connection = connect()
+    except exceptions.DatabaseConnectionError as ex:
+        log.critical("Couldn't get teams slack group id: {}".format(ex))
+        raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
+    else:
+        cursor = db_connection.cursor()
+        sql_string = """
+            SELECT slack_channel_id
+            FROM teams
+        """
+        try:
+            cursor.execute(sql_string)
+        except Exception as ex:
+            log.error("Couldn't get teams channel id: {}".format(ex))
+            cursor.close()
+            db_connection.close()
+            raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
+        else:
+            result = [r[0] for r in cursor.fetchall()]
+            cursor.close()
+            db_connection.close()
+            return result
