@@ -1,13 +1,15 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS requests (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     token TEXT,
     team_id TEXT,
     team_domain TEXT,
     channel_id TEXT,
     channel_name TEXT,
-    user_id TEXT,
-    user_name TEXT,
+    slack_user_id TEXT,
+    slack_user_name TEXT,
     command TEXT,
     command_text TEXT,
     response_url TEXT,
@@ -16,34 +18,30 @@ CREATE TABLE IF NOT EXISTS requests (
 );
 
 CREATE TABLE IF NOT EXISTS team_registration (
-    id SERIAL PRIMARY KEY,
+    team_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
-    team_id UUID,
     team_name TEXT,
     entry_code TEXT
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     slack_id TEXT,
     slack_name TEXT,
-    user_id UUID,
-    team UUID,
-    name TEXT,
-    email TEXT
+    team UUID
 );
 
 CREATE TABLE IF NOT EXISTS teams (
-    id SERIAL PRIMARY KEY,
+    team_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
-    team_id UUID,
     team_name TEXT,
-    balance NUMERIC(10, 4)
+    balance NUMERIC(10, 4),
+    slack_channel_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     origin_user_id UUID,
     destination_user_id UUID,
@@ -52,14 +50,14 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 CREATE TABLE IF NOT EXISTS permissions (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     user_id UUID,
     staff_function TEXT
-)
+);
 
 CREATE TABLE IF NOT EXISTS rewards (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP DEFAULT NOW(),
     given_by UUID,
     amount NUMERIC(10, 4),

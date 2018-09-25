@@ -12,6 +12,7 @@ import string
 import re
 import uuid
 import security
+import slackapi
 
 
 common.setup_logger()
@@ -72,13 +73,29 @@ def general_dispatcher():
                 database.save_request_log(request, False, "Command dispatcher not found.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
         log.debug("Process request done.")
         requests_queue.task_done()
 
 def create_team_dispatcher(request):
     """Dispatcher to create team requests/commands."""
     log.debug("Create team request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
+
     team_name = request['text']
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
@@ -104,23 +121,24 @@ def create_team_dispatcher(request):
     try:
         if database.team_name_available(team_name):
             log.debug("Team name available.")
-            [team_id, team_entry_code] = generate_team_details()
+            team_entry_code = generate_team_entry_code()
             try:
-                database.save_team_registration(team_id, team_name, team_entry_code)
+                new_team_id = database.save_team_registration(team_name, team_entry_code)
+                log.debug(new_team_id)
             except exceptions.QueryDatabaseError:
                 log.critical("Could not save new team registration.")
                 try:
                     database.save_request_log(request, False, "Could not save new team registration.")
                 except exceptions.SaveRequestLogError:
                     log.error("Failed to save request log on database.")
-                responder.default_error()
+                responder.delayed_reply_default_error(request)
             else:
                 log.debug("Team name saved.")
                 try:
                     database.save_request_log(request, True, "New team registration saved successfully.")
                 except exceptions.SaveRequestLogError:
                     log.error("Failed to save request log on database.")
-                responder.create_team_delayed_reply_success(request, team_id, team_name, team_entry_code)
+                responder.create_team_delayed_reply_success(request, new_team_id, team_name, team_entry_code)
         else:
             log.debug("Team name already picked.")
             try:
@@ -134,11 +152,27 @@ def create_team_dispatcher(request):
             database.save_request_log(request, False, "Could not verify team name.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
 
 def join_team_dispatcher(request):
     """Dispatcher to join team requests/commands."""
     log.debug("Join team request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
+
     team_entry_code = request["text"]
     if not team_entry_code:
         log.warn("Bad format on command '{}': Not enough arguments."
@@ -149,21 +183,6 @@ def join_team_dispatcher(request):
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
         responder.join_team_delayed_reply_missing_arguments(request)
-        return
-
-    # Check if user is in the users table
-    try:
-        if not database.user_exists(request['user_id']):
-            log.debug("New user.")
-            # Save new user.
-            database.save_user(request["user_id"], request["user_name"], generate_uuid4())
-    except exceptions.QueryDatabaseError as ex:
-        log.critical("User search failed: {}".format(ex))
-        try:
-            database.save_request_log(request, False, "Could not perform user search.")
-        except exceptions.SaveRequestLogError:
-            log.error("Failed to save request log on database.")
-        responder.default_error()
         return
 
     # Check if user has a team
@@ -184,7 +203,7 @@ def join_team_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     # Check if provided code is valid
@@ -206,7 +225,7 @@ def join_team_dispatcher(request):
             database.save_request_log(request, False, "Could not perform entry code validation.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     log.debug("Valid code - Team: {}".format(team_info))
@@ -214,26 +233,46 @@ def join_team_dispatcher(request):
         # Check if team already created.
         if not database.is_team_created(team_info["id"]):
             log.debug("Create new team.")
+            log.debug("Create new group.")
+            slack_group_results = slackapi.create_group("t_" + team_info["name"])
+            log.debug(slack_group_results)
+            if not slack_group_results:
+                log.error("Team group will not be created: {}".format(slack_group_results[1]))
+                team_info["channel_id"] = None
+            else:
+                team_info["channel_id"] = slack_group_results[1][0]
+                log.debug("Group created: Name: {} | ID: {}".format(slack_group_results[1][1], team_info["channel_id"]))
+
             try:
-                database.create_team(team_info["id"], team_info["name"])
+                database.create_team(team_info["id"], team_info["name"], team_info["channel_id"])
             except exceptions.QueryDatabaseError as ex:
                 log.critical("Team creation failed: {}".format(ex))
                 try:
                     database.save_request_log(request, False, "Could not perform team creation.")
                 except exceptions.SaveRequestLogError:
                     log.error("Failed to save request log on database.")
-                responder.default_error()
+                responder.delayed_reply_default_error(request)
                 return
+        else:
+            # Get team channel id from the database
+            try:
+                team_info["channel_id"] = database.get_team_slack_group_id(team_info["id"])
+                log.debug("Got channel id: {}".format(team_info["channel_id"]))
+            except exceptions.QueryDatabaseError as ex:
+                log.error("Slack group id search failed.")
     except exceptions.QueryDatabaseError as ex:
         log.critical("Team search failed: {}".format(ex))
         try:
             database.save_request_log(request, False, "Could not perform team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     log.debug("Add user to team.")
+    log.debug("Add user to group.")
+    if not slackapi.invite_to_group(team_info["channel_id"], request["user_id"]):
+        log.error("Could not add user to team group.")
     try:
         database.add_user_to_team(request["user_id"], team_info["id"])
     except exceptions.QueryDatabaseError as ex:
@@ -242,18 +281,35 @@ def join_team_dispatcher(request):
             database.save_request_log(request, False, "Could not add user to team (team created).")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.info("User joined team.")
         try:
             database.save_request_log(request, True, "User joined team.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
+        log.debug("Add user to group.")
         responder.join_team_delayed_reply_success(request, team_info["name"])
 
 def check_balance_dispatcher(request):
     """Dispatcher to check balance requests/commands."""
     log.debug("Check balance request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
+
     # First, check if user is in a team
     try:
         if not database.user_has_team(request["user_id"]):
@@ -271,7 +327,7 @@ def check_balance_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     # If has a team, get the team balance
@@ -284,7 +340,7 @@ def check_balance_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team balance search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
     else:
         log.debug("Report data to user.")
@@ -297,6 +353,21 @@ def check_balance_dispatcher(request):
 def buy_dispatcher(request):
     """Dispatcher to buy requests/commands."""
     log.debug("Buy request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     # Check if args are present
     request_args = get_request_args(request["text"])
@@ -331,7 +402,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     # User has a team
@@ -373,7 +444,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform destination user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     try:
@@ -392,7 +463,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform origin and destination users teams check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     # Parse transaction value
@@ -433,7 +504,7 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform origin balance check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     # Update both teams balances and register transaction
@@ -447,10 +518,23 @@ def buy_dispatcher(request):
             database.save_request_log(request, False, "Could not perform transaction.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
     else:
         log.debug("Transaction done.")
+        # Post message on destination team channel
+        try:
+            channel_id = database.get_team_slack_group_id_from_slack_user_id(destination_slack_user_id)
+        except exceptions.QueryDatabaseError as ex:
+            log.error("Could not get channel of destination user team: {}".format(ex))
+        else:
+            if channel_id:
+                if slackapi.post_transaction_received_message(channel_id, transaction_amount, request["user_id"]):
+                    log.debug("Transaction announced on destination team.")
+                else:
+                    log.error("Error POSTing message on destinations channel.")
+            else:
+                log.error("Team channel not found on database.")
         try:
             database.save_request_log(request, True, "Transaction succeeded.")
         except exceptions.SaveRequestLogError:
@@ -460,6 +544,21 @@ def buy_dispatcher(request):
 def list_transactions_dispatcher(request):
     """Dispatcher to list transactions requests/commands."""
     log.debug("List transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
@@ -501,7 +600,7 @@ def list_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     try:
@@ -513,7 +612,7 @@ def list_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform transactions history check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Retrieved data.")
         try:
@@ -525,6 +624,22 @@ def list_transactions_dispatcher(request):
 def list_teams_dispatcher(request):
     """Dispatcher to list teams requests/commands."""
     log.debug("List teams request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
+
     # TODO: Change response to "No teams" if no teams were found.
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
@@ -542,7 +657,7 @@ def list_teams_dispatcher(request):
         log.debug(teams)
     except exceptions.QueryDatabaseError as ex:
         log.critical("List teams search failed: {}".format(ex))
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         try:
             database.save_request_log(request, False, "Could not perform teams list search.")
         except exceptions.SaveRequestLogError:
@@ -559,6 +674,22 @@ def list_teams_dispatcher(request):
 def list_teams_registration_dispatcher(request):
     """Dispatcher to list teams registrations requests/commands."""
     log.debug("List teams request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
+
     # TODO: Change response to "No teams" if no teams were found.
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
@@ -576,7 +707,7 @@ def list_teams_registration_dispatcher(request):
         log.debug(teams)
     except exceptions.QueryDatabaseError as ex:
         log.critical("List teams search failed: {}".format(ex))
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         try:
             database.save_request_log(request, False, "Could not perform registration teams list search.")
         except exceptions.SaveRequestLogError:
@@ -593,6 +724,21 @@ def list_teams_registration_dispatcher(request):
 def team_details_dispatcher(request):
     """Dispatcher to team details requests/commands."""
     log.debug("Team details request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -623,7 +769,7 @@ def team_details_dispatcher(request):
         log.debug(users)
     except exceptions.QueryDatabaseError as ex:
         log.critical("Team details/users search failed: {}".format(ex))
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         try:
             database.save_request_log(request, False, "Could not fetch team details/users from the database.")
         except exceptions.SaveRequestLogError:
@@ -640,6 +786,21 @@ def team_details_dispatcher(request):
 def user_details_dispatcher(request):
     """Dispatcher to user details requests/commands."""
     log.debug("User details request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -673,7 +834,7 @@ def user_details_dispatcher(request):
                 database.save_request_log(request, False, "Could not fetch user details from the database.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
             return
     elif check_valid_uuid4(user):
         try:
@@ -684,7 +845,7 @@ def user_details_dispatcher(request):
                 database.save_request_log(request, False, "Could not fetch user details from the database.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
             return
     else:
         log.debug("Both formats invalid.")
@@ -706,6 +867,21 @@ def user_details_dispatcher(request):
 def list_my_transactions_dispatcher(request):
     """Dispatcher to list my transactions requests/commands."""
     log.debug("List transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
@@ -747,7 +923,7 @@ def list_my_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     try:
@@ -759,7 +935,7 @@ def list_my_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user transactions history check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Retrieved data.")
         try:
@@ -771,6 +947,21 @@ def list_my_transactions_dispatcher(request):
 def change_permissions_dispatcher(request):
     """Dispatcher to change permissions requests/commands."""
     log.debug("Change permissions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -823,7 +1014,7 @@ def change_permissions_dispatcher(request):
                 database.save_request_log(request, False, "Could not remove user permissions.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
     else:
         try:
             if database.user_is_staff(slack_user_id):
@@ -836,7 +1027,7 @@ def change_permissions_dispatcher(request):
                         database.save_request_log(request, False, "Could not update user permissions.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
-                    responder.default_error()
+                    responder.delayed_reply_default_error(request)
                 else:
                     log.debug("User permisions updated.")
                     try:
@@ -854,7 +1045,7 @@ def change_permissions_dispatcher(request):
                         database.save_request_log(request, False, "Could not update user permissions.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
-                    responder.default_error()
+                    responder.delayed_reply_default_error(request)
                 else:
                     log.debug("User permisions updated.")
                     try:
@@ -868,11 +1059,26 @@ def change_permissions_dispatcher(request):
                 database.save_request_log(request, False, "Could not check user permissions.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
 
 def list_staff_dispatcher(request):
     """Dispatcher to list staff requests/commands."""
     log.debug("List staff request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -891,7 +1097,7 @@ def list_staff_dispatcher(request):
             database.save_request_log(request, False, "Could not get staff team.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Staf team retrieved.")
         try:
@@ -903,6 +1109,21 @@ def list_staff_dispatcher(request):
 def hackerboy_dispatcher(request):
     """Dispatcher to hackerboy requests/commands."""
     log.debug("List staff request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -949,7 +1170,7 @@ def hackerboy_dispatcher(request):
                 database.save_request_log(request, False, "Failed to add money to all teams.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
         else:
             log.debug("Money on all teams updated.")
             try:
@@ -961,6 +1182,15 @@ def hackerboy_dispatcher(request):
                 database.save_request_log(request, True, "Balance updated.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
+            try:
+                teams_channels_id = database.get_all_teams_slack_group_id()
+            except exceptions.QueryDatabaseError as ex:
+                log.error("Failed to get all teams channel ids.")
+            else:
+                if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount, description):
+                    log.debug("All teams were reported on their private channels.")
+                else:
+                    log.error("Failed to report hackerboy command to some/all teams.")
             responder.hackerboy_delayed_reply_success(request, change_amount)
 
     elif change_amount < 0:
@@ -975,7 +1205,7 @@ def hackerboy_dispatcher(request):
                         database.save_request_log(request, False, "Could not update teams balance.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
-                    responder.default_error()
+                    responder.delayed_reply_default_error(request)
                 else:
                     log.debug("Money on all teams updated.")
                     try:
@@ -987,6 +1217,16 @@ def hackerboy_dispatcher(request):
                         database.save_request_log(request, True, "Balance updated.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
+
+                    try:
+                        teams_channels_id = database.get_all_teams_slack_group_id()
+                    except exceptions.QueryDatabaseError as ex:
+                        log.error("Failed to get all teams channel ids.")
+                    else:
+                        if slackapi.post_hackerboy_action_general(teams_channels_id, change_amount, description):
+                            log.debug("All teams were reported on their private channels.")
+                        else:
+                            log.error("Failed to report hackerboy command to some/all teams.")
                     responder.hackerboy_delayed_reply_success(request, change_amount)
             else:
                 # Not all teams have enough
@@ -1003,7 +1243,7 @@ def hackerboy_dispatcher(request):
                 database.save_request_log(request, False, "Could not check teams balance.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
     else:
         log.debug("Hackerboy requested a balance update of 0.")
         try:
@@ -1020,6 +1260,21 @@ def hackerboy_dispatcher(request):
 def hackerboy_team_dispatcher(request):
     """Dispatcher to hackerboy team requests/commands."""
     log.debug("Hackerboy team request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1077,7 +1332,7 @@ def hackerboy_team_dispatcher(request):
                 database.save_request_log(request, False, "Failed to add money to team.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
         else:
             log.debug("Money on team updated.")
             try:
@@ -1089,6 +1344,15 @@ def hackerboy_team_dispatcher(request):
                 database.save_request_log(request, True, "Balance updated.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
+            try:
+                team_channel_id = database.get_team_slack_group_id(team_id)
+            except exceptions.QueryDatabaseError as ex:
+                log.error("Failed to get team channel id.")
+            else:
+                if slackapi.post_hackerboy_action_team(team_channel_id, change_amount, description):
+                    log.debug("Team was reported on their private channel.")
+                else:
+                    log.error("Failed to report hackerboy command to a team.")
             responder.hackerboy_team_delayed_reply_success(request, change_amount)
     elif change_amount < 0:
         try:
@@ -1102,7 +1366,7 @@ def hackerboy_team_dispatcher(request):
                         database.save_request_log(request, False, "Could not update team balance.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
-                    responder.default_error()
+                    responder.delayed_reply_default_error(request)
                 else:
                     log.debug("Money on team updated.")
                     try:
@@ -1114,6 +1378,15 @@ def hackerboy_team_dispatcher(request):
                         database.save_request_log(request, True, "Balance updated.")
                     except exceptions.SaveRequestLogError:
                         log.error("Failed to save request log on database.")
+                    try:
+                        team_channel_id = database.get_team_slack_group_id(team_id)
+                    except exceptions.QueryDatabaseError as ex:
+                        log.error("Failed to get team channel id.")
+                    else:
+                        if slackapi.post_hackerboy_action_team(team_channel_id, change_amount, description):
+                            log.debug("Team was reported on their private channel.")
+                        else:
+                            log.error("Failed to report hackerboy command to a team.")
                     responder.hackerboy_team_delayed_reply_success(request, change_amount)
             else:
                 # Not all teams have enough
@@ -1130,7 +1403,7 @@ def hackerboy_team_dispatcher(request):
                 database.save_request_log(request, False, "Could not check team balance.")
             except exceptions.SaveRequestLogError:
                 log.error("Failed to save request log on database.")
-            responder.default_error()
+            responder.delayed_reply_default_error(request)
     else:
         log.debug("Hackerboy requested a balance update of 0.")
         try:
@@ -1147,6 +1420,21 @@ def hackerboy_team_dispatcher(request):
 def list_user_transactions_dispatcher(request):
     """Dispatcher to list an user transactions requests/commands."""
     log.debug("List given user transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1213,7 +1501,7 @@ def list_user_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform user's team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     try:
@@ -1225,7 +1513,7 @@ def list_user_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform transactions history check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Retrieved data.")
         try:
@@ -1237,6 +1525,21 @@ def list_user_transactions_dispatcher(request):
 def list_team_transactions_dispatcher(request):
     """Dispatcher to list a team transactions requests/commands."""
     log.debug("List given team transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1302,7 +1605,7 @@ def list_team_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform team search.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
         return
 
     try:
@@ -1314,7 +1617,7 @@ def list_team_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform transactions history check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Retrieved data.")
         try:
@@ -1326,6 +1629,21 @@ def list_team_transactions_dispatcher(request):
 def list_all_transactions_dispatcher(request):
     """Dispatcher to list all transactions requests/commands."""
     log.debug("List all transactions request.")
+
+    # Check if user is in the users table
+    try:
+        if not database.user_exists(request['user_id']):
+            log.debug("New user.")
+            # Save new user.
+            database.save_user(request["user_id"], request["user_name"])
+    except exceptions.QueryDatabaseError as ex:
+        log.critical("User search failed: {}".format(ex))
+        try:
+            database.save_request_log(request, False, "Could not perform user search.")
+        except exceptions.SaveRequestLogError:
+            log.error("Failed to save request log on database.")
+        responder.delayed_reply_default_error(request)
+        return
 
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
         log.error("User has no permission to execute this command.")
@@ -1373,7 +1691,7 @@ def list_all_transactions_dispatcher(request):
             database.save_request_log(request, False, "Could not perform transactions history check.")
         except exceptions.SaveRequestLogError:
             log.error("Failed to save request log on database.")
-        responder.default_error()
+        responder.delayed_reply_default_error(request)
     else:
         log.debug("Retrieved data.")
         try:
@@ -1392,14 +1710,21 @@ def add_request_to_queue(request):
     else:
         return True
 
-def generate_team_details():
-    """ Generates and returns a team ID and team entry code."""
-    team_id = generate_uuid4()
-    team_entry_code = "-".join([generate_random_code(), generate_random_code()])
-    return [team_id, team_entry_code]
+def generate_team_entry_code():
+    """ Generates and returns a team entry code."""
+    # Exception will be caught by caller function
+    entry_codes = database.get_all_entry_codes()
+    log.debug("Entry codes: {}".format(entry_codes))
+    new_entry_code = generate_random_code()
+    log.debug("New entry code: {}".format(new_entry_code))
+    while new_entry_code in entry_codes:
+        new_entry_code = generate_random_code()
+        log.debug("New entry code: {}".format(new_entry_code))
 
-def generate_random_code(n = 4):
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return new_entry_code
+
+def generate_random_code(n = 4, rep = 3, sep = '-'):
+    return sep.join(["".join(random.choices(string.ascii_uppercase + string.digits, k=n)) for _ in range(rep)])
 
 def generate_uuid4():
     return str(uuid.uuid4())
