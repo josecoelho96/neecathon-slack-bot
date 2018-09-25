@@ -711,7 +711,7 @@ def hackerboy_team_delayed_reply_success(request, amount):
         }
     elif amount < 0:
         response_content = {
-            "text": "Muahahah. Roubámos {} da quipa!".format(amount),
+            "text": "Muahahah. Roubámos {} da equipa!".format(amount),
         }
     else:
         response_content = {
