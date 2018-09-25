@@ -57,14 +57,14 @@ Lists the last `qty` transactions made/received in the entire application.
 ## Current features:
 - Request origin verification/validation
 - Roles/Permissions
+- Auto add users to channels
+- Report money receival on buy operation
 
 ## Commands to add
 - TBD
 
 ## Features to add
-- Auto add users to channels
 - Report logs to channel
-- Report money receival on buy operation
 - Error codes
 
 ## Problems found
