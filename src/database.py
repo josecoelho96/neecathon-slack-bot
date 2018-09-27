@@ -1,16 +1,16 @@
 import psycopg2
 import os
-import logging as log
+import logging as logger
 import exceptions
 import common
 from definitions import INITIAL_TEAM_BALANCE
+import log_messages as messages
 
 
 common.setup_logger()
 
 def connect(autocommit = True):
     """Connects to a PostgreSQL database and returns a connection."""
-    log.debug("Connecting to database...")
     try:
         conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
@@ -20,17 +20,16 @@ def connect(autocommit = True):
             port="5432"
         )
         conn.autocommit = autocommit
-        log.debug("Connected to database.")
         return conn
     except Exception as e:
-        log.critical("Failed to connect to database: {}".format(e))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(e))
         raise exceptions.DatabaseConnectionError("Can't establish connection to database.")
 
 def save_request_log(request, success, description):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.error("Could not save request log onto database: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -69,7 +68,7 @@ def save_request_log(request, success, description):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Could not save request log onto database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
@@ -82,7 +81,7 @@ def team_name_available(team_name):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not verify team name: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -101,7 +100,7 @@ def team_name_available(team_name):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to query the database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Couldn't not perform database query: {}".format(ex))
@@ -116,7 +115,7 @@ def save_team_registration(team_name, entry_code):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could save team registration: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -136,7 +135,7 @@ def save_team_registration(team_name, entry_code):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to save team registration on the database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database insertion query: {}".format(ex))
@@ -151,7 +150,7 @@ def user_exists(slack_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not verify user existance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -170,7 +169,7 @@ def user_exists(slack_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to query the database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database query: {}".format(ex))
@@ -185,7 +184,7 @@ def save_user(slack_id, slack_name):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not save user: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -204,7 +203,7 @@ def save_user(slack_id, slack_name):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to query the database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database insertion query: {}".format(ex))
@@ -217,7 +216,7 @@ def user_has_team(slack_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not check user's team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -237,7 +236,7 @@ def user_has_team(slack_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.critical("Could not check user's team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database query: {}".format(ex))
@@ -252,7 +251,7 @@ def valid_entry_code(entry_code):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not check entry code: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -269,7 +268,7 @@ def valid_entry_code(entry_code):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.critical("Could not check entry code: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database query: {}".format(ex))
@@ -293,7 +292,7 @@ def is_team_created(team_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Could not search for team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -312,7 +311,7 @@ def is_team_created(team_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.critical("Could not check team existance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database query: {}".format(ex))
@@ -322,12 +321,12 @@ def is_team_created(team_id):
             db_connection.close()
             return result
 
-def create_team(team_id, team_name, channel_id):
+def create_team(team_info):
     """Creates a new team."""
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't create team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -341,16 +340,16 @@ def create_team(team_id, team_name, channel_id):
             ) VALUES (%s, %s, %s, %s)
             """
         data = (
-            team_id,
-            team_name,
+            team_info["id"],
+            team_info["name"],
             INITIAL_TEAM_BALANCE,
-            channel_id
+            team_info["channel_id"]
         )
 
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to create team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database insertion query: {}".format(ex))
@@ -363,7 +362,7 @@ def add_user_to_team(user_slack_id, team_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't add user to team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -381,7 +380,7 @@ def add_user_to_team(user_slack_id, team_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to add user to team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
@@ -394,7 +393,7 @@ def get_users_balance(user_slack_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't retrieve user's balance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -415,7 +414,7 @@ def get_users_balance(user_slack_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to get user's team balance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
@@ -430,7 +429,7 @@ def users_with_different_team(slack_user_id_1, slack_user_id_2):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check for users teams: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -446,7 +445,7 @@ def users_with_different_team(slack_user_id_1, slack_user_id_2):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Failed to check if two users are in the same team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
@@ -461,7 +460,7 @@ def user_has_enough_credit(slack_user_id, amount):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check if a user has enough credit: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -484,7 +483,7 @@ def user_has_enough_credit(slack_user_id, amount):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't check if a user has enough credit: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
@@ -499,7 +498,7 @@ def perform_buy(origin_slack_user_id, destination_slack_user_id, amount, descrip
     try:
         db_connection = connect(False)
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check if a user has enough credit: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -557,7 +556,7 @@ def perform_buy(origin_slack_user_id, destination_slack_user_id, amount, descrip
             cursor.execute(sql_string_2, data_2)
             cursor.execute(sql_string_3, data_3)
         except Exception as ex:
-            log.error("Couldn't perform transaction operations: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.rollback()
             db_connection.close()
@@ -572,7 +571,7 @@ def get_slack_name(slack_user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user slack details: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -588,7 +587,7 @@ def get_slack_name(slack_user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get slack user name: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -603,7 +602,7 @@ def get_last_transactions(slack_user_id, max_quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get last transactions: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -650,7 +649,7 @@ def get_last_transactions(slack_user_id, max_quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get last transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -665,7 +664,7 @@ def get_teams():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get teams: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -677,7 +676,7 @@ def get_teams():
         try:
             cursor.execute(sql_string)
         except Exception as ex:
-            log.error("Couldn't get teams list: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -692,7 +691,7 @@ def get_teams_registration():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get registration teams: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -704,7 +703,7 @@ def get_teams_registration():
         try:
             cursor.execute(sql_string)
         except Exception as ex:
-            log.error("Couldn't get teams list: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -719,7 +718,7 @@ def get_team_details(team_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get team details: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -735,7 +734,7 @@ def get_team_details(team_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get team details: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -750,7 +749,7 @@ def get_team_users(team_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get team users: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -766,7 +765,7 @@ def get_team_users(team_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get team users: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -781,7 +780,7 @@ def get_user_details_from_slack_id(slack_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user details: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -797,7 +796,7 @@ def get_user_details_from_slack_id(slack_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get user details: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -812,7 +811,7 @@ def get_user_details_from_user_id(user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user details: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -828,7 +827,7 @@ def get_user_details_from_user_id(user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get user details: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -843,7 +842,7 @@ def get_user_permissions(slack_user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get user permissions: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -863,7 +862,7 @@ def get_user_permissions(slack_user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get user details: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -881,7 +880,7 @@ def get_last_user_transactions(slack_user_id, max_quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get last user transactions: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -919,7 +918,7 @@ def get_last_user_transactions(slack_user_id, max_quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get last user transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -934,7 +933,7 @@ def remove_user_permissions(slack_user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't remove user permissions: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -953,7 +952,7 @@ def remove_user_permissions(slack_user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't delete user permissions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -966,7 +965,7 @@ def user_is_staff(slack_user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check if user is staff: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -988,7 +987,7 @@ def user_is_staff(slack_user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't check if user user is staff: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1003,7 +1002,7 @@ def update_user_role(slack_user_id, new_role):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't update user role: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1023,7 +1022,7 @@ def update_user_role(slack_user_id, new_role):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't update user role: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database update query: {}".format(ex))
@@ -1036,7 +1035,7 @@ def add_user_to_staff(slack_user_id, new_role):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't add user to staff team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1059,7 +1058,7 @@ def add_user_to_staff(slack_user_id, new_role):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't add user to staff team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database insert query: {}".format(ex))
@@ -1072,7 +1071,7 @@ def get_staff_team():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get staff team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1090,7 +1089,7 @@ def get_staff_team():
         try:
             cursor.execute(sql_string)
         except Exception as ex:
-            log.error("Couldn't get staff team: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1105,7 +1104,7 @@ def all_teams_balance_above(quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check for teams balance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1122,7 +1121,7 @@ def all_teams_balance_above(quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't check for teams balance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1137,7 +1136,7 @@ def alter_money_to_all_teams(quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't update teams balance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1152,7 +1151,7 @@ def alter_money_to_all_teams(quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't update teams balance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1166,7 +1165,7 @@ def save_reward(request, amount, description):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.error("Could not save reward onto database: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1190,7 +1189,7 @@ def save_reward(request, amount, description):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Could not save reward log onto database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
@@ -1203,7 +1202,7 @@ def team_balance_above(team_id, quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't check for team balance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1222,7 +1221,7 @@ def team_balance_above(team_id, quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't check for team balance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1237,7 +1236,7 @@ def alter_money_to_team(team_id, quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't update team balance: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1253,7 +1252,7 @@ def alter_money_to_team(team_id, quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't update teams balance: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1267,7 +1266,7 @@ def save_reward_team(request, team_id, amount, description):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.error("Could not save reward onto database: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.SaveRequestLogError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1292,7 +1291,7 @@ def save_reward_team(request, team_id, amount, description):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Could not save reward log onto database: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.SaveRequestLogError("Could not execute query: {}".format(ex))
@@ -1305,7 +1304,7 @@ def get_last_team_transactions(team_id, max_quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get last transactions of a team: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1344,7 +1343,7 @@ def get_last_team_transactions(team_id, max_quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get last transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1359,12 +1358,11 @@ def get_last_all_transactions(max_quantity):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get last transactions: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
 
-        # NOTE: Multiple operations, change to having more info on the table?
         sql_string = """
             SELECT
                 transactions.created_at,
@@ -1388,7 +1386,7 @@ def get_last_all_transactions(max_quantity):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get last transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1403,12 +1401,11 @@ def get_all_entry_codes():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get entry codes: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
 
-        # NOTE: Multiple operations, change to having more info on the table?
         sql_string = """
             SELECT entry_code
             FROM team_registration
@@ -1416,7 +1413,7 @@ def get_all_entry_codes():
         try:
             cursor.execute(sql_string)
         except Exception as ex:
-            log.error("Couldn't get entry codes transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1432,7 +1429,7 @@ def get_team_slack_group_id(team_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get team slack group id: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1447,7 +1444,7 @@ def get_team_slack_group_id(team_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get entry codes transactions: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1462,7 +1459,7 @@ def get_team_slack_group_id_from_slack_user_id(slack_user_id):
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get team slack group id: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1481,7 +1478,7 @@ def get_team_slack_group_id_from_slack_user_id(slack_user_id):
         try:
             cursor.execute(sql_string, data)
         except Exception as ex:
-            log.error("Couldn't get team channel id: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
@@ -1500,7 +1497,7 @@ def get_all_teams_slack_group_id():
     try:
         db_connection = connect()
     except exceptions.DatabaseConnectionError as ex:
-        log.critical("Couldn't get teams slack group id: {}".format(ex))
+        logger.critical(messages.CONNECT_TO_DB_FAILED.format(ex))
         raise exceptions.QueryDatabaseError("Could not connect to database: {}".format(ex))
     else:
         cursor = db_connection.cursor()
@@ -1511,7 +1508,7 @@ def get_all_teams_slack_group_id():
         try:
             cursor.execute(sql_string)
         except Exception as ex:
-            log.error("Couldn't get teams channel id: {}".format(ex))
+            logger.critical(messages.DB_EXECUTE_FAILED.format(ex))
             cursor.close()
             db_connection.close()
             raise exceptions.QueryDatabaseError("Could not perform database select query: {}".format(ex))
