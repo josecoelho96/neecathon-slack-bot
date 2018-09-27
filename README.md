@@ -59,17 +59,17 @@ Lists the last `qty` transactions made/received in the entire application.
 - Roles/Permissions
 - Auto add users to channels
 - Report money receival on buy operation
+- Report logs to channel
 
 ## Commands to add
 - TBD
 
 ## Features to add
-- Report logs to channel
-- Error codes
+- Add/remove staff from staff channel
 
 ## Problems found
 - How to create first admin.
-- Implementation: Log levels aren't well defined.
+- FIXED: ~~Implementation: Log levels aren't well defined.~~
 - FIXED: ~~Entry codes are not being verified as unique. Not using UUID.~~
 - FIXED: ~~Users are only added to users table on join team commands, should be done always, but on every request will make this slow.~~
 
