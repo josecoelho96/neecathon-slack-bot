@@ -2,9 +2,11 @@ import common
 import exceptions
 import handlers
 import json
-import logging as log
+import logging as logger
 from bottle import Bottle, response, run
 from definitions import SERVER_PORT
+import log_messages as messages
+import slackapi
 
 
 common.setup_logger()
@@ -12,37 +14,26 @@ common.setup_logger()
 class JSONBottle(Bottle):
     """Extension to default Bottle. All error messages are JSON formatted."""
     def default_error_handler(self, res):
-        log.error("Server Error - Code: {} - Message: {}".format(res.status_code, res.body))
+        logger.error(messages.SERVER_ERROR.format(res.status_code, res.body))
+        if not slackapi.logger_error(messages.SERVER_ERROR.format(res.status_code, res.body)):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+
         response.add_header("Content-Type", "application/json")
         return json.dumps(dict(message = res.body, status_code = res.status_code))
 
 def start():
     """Start HTTP server."""
     bot_app = JSONBottle()
-    log.info("Starting HTTP server on port {}.".format(SERVER_PORT))
+    logger.debug(messages.HTTP_SERVER_STARTING.format(SERVER_PORT))
     try:
         define_routing(bot_app)
         run(app = bot_app, host="0.0.0.0", port=SERVER_PORT)
     except Exception as ex:
-        log.error("Error: {}".format(ex))
-        raise exceptions.HTTPServerStartError("HTTP server failed.")
+        logger.error(messages.HTTP_SERVER_STARTUP_ERROR.format(ex))
+        if not slackapi.logger_error(messages.HTTP_SERVER_STARTUP_ERROR.format(ex)):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        raise exceptions.HTTPServerStartError("HTTP server startup failed.")
 
 def define_routing(app):
     """Defines all server routing scheme."""
-    app.route(path="/create-team", method=["POST"], callback=handlers.create_team)
-    app.route(path="/join-team", method=["POST"], callback=handlers.join_team)
-    app.route(path="/check-balance", method=["POST"], callback=handlers.check_balance)
-    app.route(path="/buy", method=["POST"], callback=handlers.buy)
-    app.route(path="/list-transactions", method=["POST"], callback=handlers.list_transactions)
-    app.route(path="/list-teams", method=["POST"], callback=handlers.list_teams)
-    app.route(path="/list-teams-registration", method=["POST"], callback=handlers.list_teams_registration)
-    app.route(path="/team-details", method=["POST"], callback=handlers.team_details)
-    app.route(path="/user-details", method=["POST"], callback=handlers.user_details)
-    app.route(path="/list-my-transactions", method=["POST"], callback=handlers.list_my_transactions)
-    app.route(path="/change-permissions", method=["POST"], callback=handlers.change_permissions)
-    app.route(path="/list-staff", method=["POST"], callback=handlers.list_staff)
-    app.route(path="/hackerboy", method=["POST"], callback=handlers.hackerboy)
-    app.route(path="/hackerboy-team", method=["POST"], callback=handlers.hackerboy_team)
-    app.route(path="/list-user-transactions", method=["POST"], callback=handlers.list_user_transactions)
-    app.route(path="/list-team-transactions", method=["POST"], callback=handlers.list_team_transactions)
-    app.route(path="/list-all-transactions", method=["POST"], callback=handlers.list_all_transactions)
+    app.route(path="/", method=["POST"], callback=handlers.request_handler)
