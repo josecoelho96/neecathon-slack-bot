@@ -93,8 +93,8 @@ def create_team_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -643,8 +643,8 @@ def list_teams_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -684,8 +684,8 @@ def list_teams_registration_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -725,8 +725,8 @@ def team_details_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -781,8 +781,8 @@ def user_details_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -931,8 +931,8 @@ def change_permissions_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1065,8 +1065,8 @@ def list_staff_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Staff, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1106,8 +1106,8 @@ def hackerboy_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1279,8 +1279,8 @@ def hackerboy_team_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1465,8 +1465,8 @@ def list_user_transactions_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1565,8 +1565,8 @@ def list_team_transactions_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
@@ -1665,8 +1665,8 @@ def list_all_transactions_dispatcher(request):
 
     # Security check
     if not security.user_has_permission(security.RoleLevels.Admin, request["user_id"]):
-        logger.error(messages.INSUFFICIENT_PERMISSIONS)
-        if not slackapi.logger_error(messages.INSUFFICIENT_PERMISSIONS):
+        logger.warn(messages.INSUFFICIENT_PERMISSIONS)
+        if not slackapi.logger_warning(messages.INSUFFICIENT_PERMISSIONS):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.UNAUTHORIZED)
