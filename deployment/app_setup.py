@@ -69,7 +69,7 @@ def setup_logger(minium_level = logger.DEBUG):
 
 def main():
     """ Main function."""
-    setup_logger()
+    setup_logger(minium_level=logger.INFO)
 
     print("Please provide the information asked in order to setup the application.")
     db_username = input("Database username: ")

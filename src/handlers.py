@@ -50,10 +50,11 @@ def request_handler():
         logger.error(messages.REQUEST_ORIGIN_CHECK_FAILED)
         if not slackapi.logger_error(messages.REQUEST_ORIGIN_CHECK_FAILED):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
-        try:
-            database.save_request_log(request_data, False, db_messages.REQUEST_ORIGIN_CHECK_FAILED)
-        except exceptions.SaveRequestLogError:
-            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
+        if all_elements_on_request(request_data):
+            try:
+                database.save_request_log(request_data, False, db_messages.REQUEST_ORIGIN_CHECK_FAILED)
+            except exceptions.SaveRequestLogError:
+                logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
         return responder.unverified_origin_error()
 
 def all_elements_on_request(request_data):
