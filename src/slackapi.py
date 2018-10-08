@@ -4,6 +4,7 @@ import requests
 import os
 from datetime import datetime
 import log_messages as messages
+import responder_messages
 
 
 common.setup_logger()
@@ -98,11 +99,14 @@ def post_hackerboy_action_general(team_channel_ids, amount_changed, hacker_messa
 def post_hackerboy_action_team(team_channel_id, amount_changed, hacker_message):
     """ Posts a message on a team channel reporting a balance change."""
     if amount_changed > 0:
+        message = responder_messages.HACKERBOY_TEAM_ADD_MONEY.format(amount_changed)
         message = "O _hackerboy_ é bondoso! Receberam uma transferência de {}!\n".format(amount_changed)
     else:
+        message = responder_messages.HACKERBOY_TEAM_REMOVE_MONEY.format(amount_changed)
         message = "O _hackerboy_ decidiu revoltar-se! Perderam {} do vosso saldo!\n".format(amount_changed)
 
-    message += "Ele deixou ainda a seguinte mensagem: '_{}_'.".format(hacker_message)
+    message += responder_messages.HACKERBOY_TEAM_MESSAGE.format(hacker_message)
+    message += "Ele deixou ainda a seguinte mensagem: ' _{}_ '.".format(hacker_message)
     return post_message(team_channel_id, message)
 
 def logger_info(message):
