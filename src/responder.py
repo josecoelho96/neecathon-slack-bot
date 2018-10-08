@@ -221,10 +221,10 @@ def team_details_delayed_reply_success(request, details, users):
     response_content = {
         "text": "",
     }
-    if len(details):
+    if details:
         response_content["text"] += messages.TEAM_DETAILS_SUCCESS
         response_content["text"] += messages.TEAM_DETAILS_DETAILS.format(details[1], details[2], details[0])
-        if len(users):
+        if users:
             # Team has users
             for user in users:
                 response_content["text"] += messages.TEAM_DETAILS_ELEMENT_DETAILS.format(user[0], user[1], user[2])
