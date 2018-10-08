@@ -454,6 +454,13 @@ def delayed_reply_default_error(request):
     }
     send_delayed_response(request['response_url'], response_content)
 
+def delayed_reply_argument_formating_error(request):
+    """Delayed default response to report an error on argument."""
+    response_content = {
+        "text": messages.FORMAT_ERROR.format(get_support_channel_id()),
+    }
+    send_delayed_response(request['response_url'], response_content)
+
 def overloaded_error():
     """Immediate default response to an overloaded error."""
     response.add_header("Content-Type", "application/json")

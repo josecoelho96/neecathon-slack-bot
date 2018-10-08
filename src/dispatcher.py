@@ -753,6 +753,18 @@ def team_details_dispatcher(request):
         responder.team_details_delayed_reply_missing_args(request)
         return
 
+    if not check_valid_uuid4(team_id):
+        # Invalid team id
+        logger.warn(messages.INVALID_UUID)
+        if not slackapi.logger_warning(messages.INVALID_UUID):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        try:
+            database.save_request_log(request, False, db_messages.INVALID_UUID)
+        except exceptions.SaveRequestLogError:
+            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
+        responder.delayed_reply_argument_formating_error(request)
+        return
+
     try:
         details = database.get_team_details(team_id)
         users = database.get_team_users(team_id)
@@ -1315,15 +1327,15 @@ def hackerboy_team_dispatcher(request):
     # Check if valid team uuid
     team_id = request_args[0]
     if not check_valid_uuid4(team_id):
-        # Bad usage
-        logger.warn(messages.MISSING_ARGS)
-        if not slackapi.logger_warning(messages.MISSING_ARGS):
+        # Invalid team id
+        logger.warn(messages.INVALID_UUID)
+        if not slackapi.logger_warning(messages.INVALID_UUID):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
-            database.save_request_log(request, False, db_messages.MISSING_ARGS)
+            database.save_request_log(request, False, db_messages.INVALID_UUID)
         except exceptions.SaveRequestLogError:
             logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
-        responder.hackerboy_team_delayed_reply_missing_args(request)
+        responder.delayed_reply_argument_formating_error(request)
         return
 
     # Parse value to change
@@ -1355,7 +1367,7 @@ def hackerboy_team_dispatcher(request):
             responder.delayed_reply_default_error(request)
             return
         else:
-            # Money on team updated"
+            # Money on team updated
             try:
                 description = parse_transaction_description(request_args[2:])
                 database.save_reward_team(request, team_id, change_amount, description)
@@ -1603,15 +1615,15 @@ def list_team_transactions_dispatcher(request):
 
     team_id = request_args[0]
     if not check_valid_uuid4(team_id):
-        # Bad usage
-        logger.warn(messages.MISSING_ARGS)
-        if not slackapi.logger_warning(messages.MISSING_ARGS):
+        # Invalid team id
+        logger.warn(messages.INVALID_UUID)
+        if not slackapi.logger_warning(messages.INVALID_UUID):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
-            database.save_request_log(request, False, db_messages.MISSING_ARGS)
+            database.save_request_log(request, False, db_messages.INVALID_UUID)
         except exceptions.SaveRequestLogError:
             logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
-        responder.list_team_transactions_delayed_reply_missing_args(request)
+        responder.delayed_reply_argument_formating_error(request)
         return
 
     try:
