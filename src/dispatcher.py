@@ -3,7 +3,7 @@ import database
 import responder
 from threading import Thread
 from queue import Queue
-from definitions import SLACK_COMMANDS, TEAM_CHANNEL_PREFIX
+import definitions
 import common
 import exceptions
 import uuid
@@ -35,39 +35,39 @@ def general_dispatcher():
         request = requests_queue.get()
         logger.debug(messages.DISPATCH_REQUEST_STARTING)
 
-        if request["command"] == SLACK_COMMANDS["CREATE_TEAM"]:
+        if request["command"] == definitions.SLACK_COMMANDS["CREATE_TEAM"]:
             create_team_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["JOIN_TEAM"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["JOIN_TEAM"]:
             join_team_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["CHECK_BALANCE"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["CHECK_BALANCE"]:
             check_balance_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["BUY"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["BUY"]:
             buy_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_TRANSACTIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_TRANSACTIONS"]:
             list_transactions_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_TEAMS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_TEAMS"]:
             list_teams_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_TEAMS_REGISTRATION"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_TEAMS_REGISTRATION"]:
             list_teams_registration_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["TEAM_DETAILS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["TEAM_DETAILS"]:
             team_details_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["USER_DETAILS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["USER_DETAILS"]:
             user_details_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_MY_TRANSACTIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_MY_TRANSACTIONS"]:
             list_my_transactions_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["CHANGE_PERMISSIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["CHANGE_PERMISSIONS"]:
             change_permissions_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_STAFF"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_STAFF"]:
             list_staff_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["HACKERBOY"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["HACKERBOY"]:
             hackerboy_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["HACKERBOY_TEAM"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["HACKERBOY_TEAM"]:
             hackerboy_team_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_USER_TRANSACTIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_USER_TRANSACTIONS"]:
             list_user_transactions_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_TEAM_TRANSACTIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_TEAM_TRANSACTIONS"]:
             list_team_transactions_dispatcher(request)
-        elif request["command"] == SLACK_COMMANDS["LIST_ALL_TRANSACTIONS"]:
+        elif request["command"] == definitions.SLACK_COMMANDS["LIST_ALL_TRANSACTIONS"]:
             list_all_transactions_dispatcher(request)
         else:
             logger.error(messages.INVALID_REQUEST_COMMAND_VALUE)
@@ -242,7 +242,7 @@ def join_team_dispatcher(request):
         # Check if team already created.
         if not database.is_team_created(team_info["id"]):
             # Create new team and private channel
-            slack_group_results = slackapi.create_group(TEAM_CHANNEL_PREFIX + team_info["name"])
+            slack_group_results = slackapi.create_group(definitions.TEAM_CHANNEL_PREFIX + team_info["name"])
             if not slack_group_results:
                 # Error creating group
                 logger.error(messages.TEAM_CHANNEL_NOT_CREATED.format(slack_group_results[1]))
@@ -576,16 +576,20 @@ def list_transactions_dispatcher(request):
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
     if not request_args:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
     else:
         try:
             transactions_quantity = parse_transaction_quantity(request_args[0])
         except exceptions.IntegerParseError:
-            transactions_quantity = 10
+            transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
 
     # Check if value is positive
     if transactions_quantity <= 0:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
+
+    # Check if value is not above the max
+    if transactions_quantity > definitions.DATABASE_MAX_LIMIT:
+        transactions_quantity = definitions.DATABASE_MAX_LIMIT
 
     # Check if user is in a team
     try:
@@ -863,16 +867,20 @@ def list_my_transactions_dispatcher(request):
     # Check if quantity is valid
     request_args = get_request_args(request["text"])
     if not request_args:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
     else:
         try:
             transactions_quantity = parse_transaction_quantity(request_args[0])
         except exceptions.IntegerParseError:
-            transactions_quantity = 10
+            transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
 
     # Check if value is positive
     if transactions_quantity <= 0:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
+
+    # Check if value is not above the max
+    if transactions_quantity > definitions.DATABASE_MAX_LIMIT:
+        transactions_quantity = definitions.DATABASE_MAX_LIMIT
 
     # Check if user is in a team
     try:
@@ -1505,10 +1513,14 @@ def list_user_transactions_dispatcher(request):
     try:
         transactions_quantity = parse_transaction_quantity(request_args[1])
     except exceptions.IntegerParseError as ex:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
 
     if transactions_quantity <= 0:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
+
+   # Check if value is not above the max
+    if transactions_quantity > definitions.DATABASE_MAX_LIMIT:
+        transactions_quantity = definitions.DATABASE_MAX_LIMIT
 
     # Check if user is in a team
     try:
@@ -1605,10 +1617,14 @@ def list_team_transactions_dispatcher(request):
     try:
         transactions_quantity = parse_transaction_quantity(request_args[1])
     except exceptions.IntegerParseError as ex:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
 
     if transactions_quantity <= 0:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
+
+   # Check if value is not above the max
+    if transactions_quantity > definitions.DATABASE_MAX_LIMIT:
+        transactions_quantity = definitions.DATABASE_MAX_LIMIT
 
     # Check if team exists
     try:
@@ -1692,10 +1708,14 @@ def list_all_transactions_dispatcher(request):
     try:
         transactions_quantity = parse_transaction_quantity(request_args[0])
     except exceptions.IntegerParseError as ex:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
 
     if transactions_quantity <= 0:
-        transactions_quantity = 10
+        transactions_quantity = definitions.DEFAULT_TRANSACTION_LIST_LENGTH
+
+   # Check if value is not above the max
+    if transactions_quantity > definitions.DATABASE_MAX_LIMIT:
+        transactions_quantity = definitions.DATABASE_MAX_LIMIT
 
     try:
         # Retrieve from the database
