@@ -58,7 +58,7 @@ def join_team_delayed_reply_missing_args(request):
 def join_team_delayed_reply_already_on_team(request):
     """Delayed response to Slack reporting user is already on a team on join team command"""
     response_content = {
-        "text": messages.USER_ALREADY_ON_TEAM_ERROR.format(get_support_channel_id)
+        "text": messages.USER_ALREADY_ON_TEAM_ERROR.format(get_support_channel_id())
     }
     send_delayed_response(request['response_url'], response_content)
 
