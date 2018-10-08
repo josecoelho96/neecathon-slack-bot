@@ -67,6 +67,24 @@ def post_transaction_received_message(channel_id, amount, origin_user):
     message = responder_messages.TRANSACTION_RECEIVED.format(amount, origin_user)
     return post_message(channel_id, message)
 
+def remove_from_group(group_id, user_id):
+    """ Removes a user from a private channel."""
+    url = "https://slack.com/api/groups.kick"
+    headers = set_headers()
+    payload = {
+        "channel": group_id,
+        "user": user_id
+    }
+    try:
+        r = requests.post(url, json = payload, headers = headers)
+    except Exception as ex:
+        logger.error(messages.SLACK_POST_FAILED.format(ex))
+        if not logger_error(messages.SLACK_POST_FAILED.format(ex)):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        return False
+    else:
+        req_response = r.json()
+        return r.status_code == 200 and req_response["ok"] == True
 
 def post_message(channel_id, message):
     """Post a message on a channel."""

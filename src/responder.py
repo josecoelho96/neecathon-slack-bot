@@ -293,6 +293,13 @@ def change_permission_delayed_reply_success(request):
     }
     send_delayed_response(request['response_url'], response_content)
 
+def change_permission_delayed_reply_user_channel_not_modified(request):
+    """Delayed response to Slack reporting success change permission command withou user deletion."""
+    response_content = {
+        "text": messages.CHANGE_PERMISSIONS_SUCCESS_CHANNEL_NOT_MODIFIED,
+    }
+    send_delayed_response(request['response_url'], response_content)
+
 def list_staff_delayed_reply_success(request, staff_team):
     """Delayed response to Slack reporting the staff team."""
     response_content = {

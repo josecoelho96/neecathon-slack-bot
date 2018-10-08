@@ -14,6 +14,7 @@ import uuid
 import security
 import slackapi
 import log_messages as messages
+import os
 import db_request_messages as db_messages
 
 
@@ -1032,7 +1033,14 @@ def change_permissions_dispatcher(request):
                 database.save_request_log(request, True, db_messages.UPDATE_USER_PERMISSONS_SUCCESS)
             except exceptions.SaveRequestLogError:
                 logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
-            responder.change_permission_delayed_reply_success(request)
+            # Remove user from staff channel
+            if not slackapi.remove_from_group(os.getenv("SLACK_STAFF_CHANNEL_ID"), slack_user_id):
+                logger.error(messages.REMOVE_USER_FROM_STAFF_CHANNEL_FAILED)
+                if not slackapi.logger_critical(messages.REMOVE_USER_FROM_STAFF_CHANNEL_FAILED):
+                    logger.warn(messages.SLACK_POST_LOG_FAILED)
+                responder.change_permission_delayed_reply_user_channel_not_modified(request)
+            else:
+                responder.change_permission_delayed_reply_success(request)
     else:
         try:
             if database.user_is_staff(slack_user_id):
@@ -1074,7 +1082,14 @@ def change_permissions_dispatcher(request):
                         database.save_request_log(request, True, db_messages.UPDATE_USER_PERMISSONS_SUCCESS)
                     except exceptions.SaveRequestLogError:
                         logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
-                    responder.change_permission_delayed_reply_success(request)
+                    # Add to private channel
+                    if not slackapi.invite_to_group(os.getenv("SLACK_STAFF_CHANNEL_ID"), slack_user_id):
+                        logger.error(messages.ADD_USER_TO_STAFF_CHANNEL_FAILED)
+                        if not slackapi.logger_critical(messages.ADD_USER_TO_STAFF_CHANNEL_FAILED):
+                            logger.warn(messages.SLACK_POST_LOG_FAILED)
+                        responder.change_permission_delayed_reply_user_channel_not_modified(request)
+                    else:
+                        responder.change_permission_delayed_reply_success(request)
         except exceptions.QueryDatabaseError as ex:
             logger.critical(messages.UPDATE_USER_PERMISSIONS_FAILED.format(ex))
             if not slackapi.logger_critical(messages.UPDATE_USER_PERMISSIONS_FAILED.format(ex)):
