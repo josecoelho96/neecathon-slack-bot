@@ -501,6 +501,19 @@ def buy_dispatcher(request):
         responder.delayed_reply_invalid_value(request)
         return
 
+    # Check if transaction amount is above minium
+    if transaction_amount < definitions.MINIUM_TRANSACTION_AMOUNT:
+        # Amount is below the minimum value
+        logger.info(messages.TRANSACTION_BELOW_MINIUM)
+        if not slackapi.logger_info(messages.TRANSACTION_BELOW_MINIUM):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        try:
+            database.save_request_log(request, False, db_messages.TRANSACTION_BELOW_MINIUM)
+        except exceptions.SaveRequestLogError:
+            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
+        responder.delayed_reply_invalid_value(request)
+        return
+
     # Check if user has enough credit.
     try:
         if not database.user_has_enough_credit(request["user_id"], transaction_amount):
@@ -1164,6 +1177,19 @@ def hackerboy_dispatcher(request):
         responder.delayed_reply_invalid_value(request)
         return
 
+    # Check if transaction amount is above minium
+    if abs(change_amount) < definitions.MINIUM_TRANSACTION_AMOUNT:
+        # Amount is below the minimum value
+        logger.info(messages.TRANSACTION_BELOW_MINIUM)
+        if not slackapi.logger_info(messages.TRANSACTION_BELOW_MINIUM):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        try:
+            database.save_request_log(request, False, db_messages.TRANSACTION_BELOW_MINIUM)
+        except exceptions.SaveRequestLogError:
+            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
+        responder.delayed_reply_invalid_value(request)
+        return
+
     if change_amount > 0:
         # add money to all teams
         try:
@@ -1347,6 +1373,19 @@ def hackerboy_team_dispatcher(request):
             logger.warn(messages.SLACK_POST_LOG_FAILED)
         try:
             database.save_request_log(request, False, db_messages.PARSING_INVALID_VALUE)
+        except exceptions.SaveRequestLogError:
+            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
+        responder.delayed_reply_invalid_value(request)
+        return
+
+    # Check if transaction amount is above minium
+    if abs(change_amount) < definitions.MINIUM_TRANSACTION_AMOUNT:
+        # Amount is below the minimum value
+        logger.info(messages.TRANSACTION_BELOW_MINIUM)
+        if not slackapi.logger_info(messages.TRANSACTION_BELOW_MINIUM):
+            logger.warn(messages.SLACK_POST_LOG_FAILED)
+        try:
+            database.save_request_log(request, False, db_messages.TRANSACTION_BELOW_MINIUM)
         except exceptions.SaveRequestLogError:
             logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
         responder.delayed_reply_invalid_value(request)
