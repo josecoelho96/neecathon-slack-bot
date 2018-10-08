@@ -74,3 +74,4 @@ HACKERBOY_TEAM_ADD_MONEY = "O _hackerboy_ é bondoso! Receberam uma transferênc
 HACKERBOY_TEAM_REMOVE_MONEY = "O _hackerboy_ decidiu revoltar-se! Perderam {} do vosso saldo!\n"
 HACKERBOY_TEAM_MESSAGE = "Ele deixou ainda a seguinte mensagem: ' _{}_ '."
 FORMAT_ERROR = "Má formatação/utilização dos arugmentos.\n" + DEFAULT_ERROR
+TRANSACTION_RECEIVED = "Boa! Receberam uma transferência de {}, do <@{}>!"

@@ -64,7 +64,7 @@ def invite_to_group(group_id, user_id):
         return r.status_code == 200 and req_response["ok"] == True
 
 def post_transaction_received_message(channel_id, amount, origin_user):
-    message = "Boa! Receberam uma transferência de {}, do <@{}>!".format(amount, origin_user)
+    message = responder_messages.TRANSACTION_RECEIVED.format(amount, origin_user)
     return post_message(channel_id, message)
 
 
@@ -100,13 +100,10 @@ def post_hackerboy_action_team(team_channel_id, amount_changed, hacker_message):
     """ Posts a message on a team channel reporting a balance change."""
     if amount_changed > 0:
         message = responder_messages.HACKERBOY_TEAM_ADD_MONEY.format(amount_changed)
-        message = "O _hackerboy_ é bondoso! Receberam uma transferência de {}!\n".format(amount_changed)
     else:
         message = responder_messages.HACKERBOY_TEAM_REMOVE_MONEY.format(amount_changed)
-        message = "O _hackerboy_ decidiu revoltar-se! Perderam {} do vosso saldo!\n".format(amount_changed)
 
     message += responder_messages.HACKERBOY_TEAM_MESSAGE.format(hacker_message)
-    message += "Ele deixou ainda a seguinte mensagem: ' _{}_ '.".format(hacker_message)
     return post_message(team_channel_id, message)
 
 def logger_info(message):
