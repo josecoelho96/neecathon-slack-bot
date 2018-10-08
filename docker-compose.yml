@@ -2,7 +2,7 @@ version: '3'
 services:
   db:
     image: postgres:10-alpine
-    container_name: patinhas-bot-db
+    container_name: neecathon-db
     env_file: .env
     environment:
       POSTGRES_USER: ${DB_USERNAME}
@@ -16,11 +16,20 @@ services:
   python:
     build: .
     restart: on-failure
-    container_name: patinhas-bot-server
+    container_name: neecathon-server
     env_file: .env
     volumes:
       - ./src:/src
-    ports:
-      - "${APP_PORT_EXTERNAL}:8888"
+    expose:
+      - "8888"
     depends_on:
       - db
+  nginx:
+    image: nginx:1.15.2-alpine
+    container_name: neecathon-nginx
+    ports:
+      - "${APP_PORT_EXTERNAL}:80"
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+    depends_on:
+      - python
