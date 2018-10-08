@@ -12,9 +12,9 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubun
 sudo apt update
 # apt-cache policy docker-ce
 sudo apt install docker-ce
-sudo systemctl status docker
+# sudo systemctl status docker
 sudo usermod -aG docker ${USER}
-su - ${USER}
+# su - ${USER}
 
 # Install docker-compose
 sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
@@ -23,3 +23,4 @@ sudo chmod +x /usr/local/bin/docker-compose
 # Check versions
 docker --version
 docker-compose --version
+echo "All done. Please restart the system."
