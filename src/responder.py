@@ -501,4 +501,7 @@ def get_slack_user_tag(slack_user_id):
         slack_user_name = database.get_slack_name(slack_user_id)
         return "<@{}|{}>".format(slack_user_id, slack_user_name)
     except exceptions.QueryDatabaseError as ex:
+        logger.critical(log_messages.DB_EXECUTE_FAILED.format(ex))
+        if not slackapi.logger_critical(log_messages.DB_EXECUTE_FAILED.format(ex)):
+            logger.warn(log_messages.SLACK_POST_LOG_FAILED)
         return None
