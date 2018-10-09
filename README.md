@@ -54,9 +54,9 @@ Command | Description
 `/movimentos [quantidade]` | *Vê os últimos movimentos da tua equipa.*
 `/ver-equipas` | *Vê a lista das equipas em competição.*
 `/ver-equipas-registo` | *Vê os códigos de registo das várias equipas.*
-`/detalhes @user|user-id` | *Mostra os detalhes de um utilizador.*
+`/detalhes @user\|user-id` | *Mostra os detalhes de um utilizador.*
 `/meus-movimentos [quantidade]` | *Vê os teus últimos movimentos.*
-`/alterar-permissoes @user admin|staff|remover` | *Altera as permissões de um utilizador.*
+`/alterar-permissoes @user admin\|staff\|remover` | *Altera as permissões de um utilizador.*
 `/ver-staff` | *Vê a lista de elementos da staff.*
 `/hackerboy quantia descrição` | *Rouba ou dá dinheiro a todos.*
 `/hackerboy-equipa id-equipa quantia descrição` | *Dá ou tira dinheiro a uma equipa.*
