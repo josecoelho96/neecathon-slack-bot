@@ -17,6 +17,18 @@ This will create the env file and create all channels/groups needed.
 6. Execute the command: \
     `docker-compose up -d`
 7. The docker-compose should be running and a message should have been posted on the logs channel. If not, please check the logs to detect the errors.
+8. Do one (any) request with the admin account. It will fail, but don't worry.
+9. On the terminal, type: \
+    `docker exec -ti <database-container-name> psql --username=<db-user-name> <db-name>` \
+    Eg: `docker exec -ti neecathon-db psql --username=neecathon-bot-db-user neecathon-bot-db`
+
+10. Now type the following on the `psql` prompt: \
+    `\c database_name` (Example: `\c neecathon-bot-db`)
+11. Type: \
+    ` SELECT * FROM users;` which should give you one row with the user id of the admin account.
+12. Type: \
+    ` INSERT INTO permissions(user_id, staff_function) VALUES ('<user-id>', 'admin');`
+13. The user should now be an admin.
 
 ### Slack side
 1. Create new user, and setup the profile (full name, display name, user details, user photo). This user will be used to generate the token and must have full access to the repository.
