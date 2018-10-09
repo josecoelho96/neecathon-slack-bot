@@ -1,6 +1,58 @@
 # neecathon-slack-bot
 A slack bot for the NEECathon!
 
+## Deployment instructions
+### Server side
+1. Clone repository into server/machine: \
+    `git clone <url>`
+2. Change directory into the `deployment` directory: \
+    `cd neeacthon-slack-bot/deployment`
+3. Set `server_setup.sh` script as executable: \
+    `chmod +x server_setup.sh`
+4. Run script (might need sudo privileges): \
+    `./server_setup.sh`
+5. On the repository root (`neecathon-slack-bot`), run: \
+    `python3 deployment/app_setup.py` \
+This will create the env file and create all channels/groups needed.
+6. Execute the command: \
+    `docker-compose up -d`
+7. The docker-compose should be running and a message should have been posted on the logs channel. If not, please check the logs to detect the errors.
+
+### Slack side
+1. Create new user, and setup the profile (full name, display name, user details, user photo). This user will be used to generate the token and must have full access to the repository.
+2. Change settings of the workspace:
+    1. **Workspace Signup Mode:** *Invitation only*
+    2. **Workspace Icon:** *If desired*
+3. Create new application:
+    1. Setup *App Name*, *Short Description* and *App Icon*.
+    2. On *OAuth & Permissions*, add the required scopes:
+        1. Modify your public channels -  channels:write
+        2. Send messages as NEECathon App - chat:write:bot
+        3. Modify your private channels -  groups:write
+    3. On the same tab, publish the application and save the OAuth Access Token on the .env file.
+4. Add all slash commands. Never forget to enable 'Escape Names'.
+
+## Commands Syntax (Portuguese description)
+Command | Description
+--------|--------
+`/saldo` | *Consulta o teu saldo.*
+`/criar-equipa nome-equipa` | *Cria uma nova equipa.*
+`/entrar código-equipa` | *Entra numa equipa.*
+`/compra @destinatario quantia descrição` | *Realiza uma compra.*
+`/movimentos [quantidade]` | *Vê os últimos movimentos da tua equipa.*
+`/ver-equipas` | *Vê a lista das equipas em competição.*
+`/ver-equipas-registo` | *Vê os códigos de registo das várias equipas.*
+`/detalhes @user|user-id` | *Mostra os detalhes de um utilizador.*
+`/meus-movimentos [quantidade]` | *Vê os teus últimos movimentos.*
+`/alterar-permissoes @user admin|staff|remover` | *Altera as permissões de um utilizador.*
+`/ver-staff` | *Vê a lista de elementos da staff.*
+`/hackerboy quantia descrição` | *Rouba ou dá dinheiro a todos.*
+`/hackerboy-equipa id-equipa quantia descrição` | *Dá ou tira dinheiro a uma equipa.*
+`/transacoes-participante @user [quantidade]` | *Mostra as transações de um participante.*
+`/transacoes-equipa id-equipa [quantidade]` | *Vê os últimos movimentos de uma equipa.*
+`/transacoes-todas [quantidade]` | *Vê os últimos movimentos.*
+`/detalhes-equipa id-equipa` | *Vê os detalhes de uma equipa.*
+
 ## Valid commands
 ### Create team
 `/criar-equipa [team name]`
