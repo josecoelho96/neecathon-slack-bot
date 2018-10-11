@@ -76,7 +76,6 @@ def main():
     db_password = input("Database password: ")
     db_name = input("Database name: ")
     db_host = input("Database host: ")
-    app_port_external = input("Application exposed port: ")
     slack_signing_secret = input("Slack signing secret: ")
     slack_user_token = input("Please insert the user token: ")
     slack_logs_channel_id = create_group("logs", slack_user_token)
@@ -91,7 +90,6 @@ def main():
         env_file.write("DB_HOST={}\n".format(db_host))
 
         env_file.write("\n# App related\n")
-        env_file.write("APP_PORT_EXTERNAL={}\n".format(app_port_external))
 
         env_file.write("\n# Slack related\n")
         env_file.write("SLACK_SUPPORT_CHANNEL_ID={}\n".format(slack_support_channel_id))

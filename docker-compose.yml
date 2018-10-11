@@ -14,7 +14,9 @@ services:
       - ./db/data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d/
   python:
-    build: .
+    build:
+      context: .
+      dockerfile: ./deployment/python/Dockerfile
     restart: on-failure
     container_name: neecathon-server
     env_file: .env
@@ -25,11 +27,18 @@ services:
     depends_on:
       - db
   nginx:
-    image: nginx:1.15.2-alpine
+    build:
+      context: .
+      dockerfile: ./deployment/nginx/Dockerfile
+      args:
+        SERVER_NAME: slackbot.localhost
     container_name: neecathon-nginx
     ports:
-      - "${APP_PORT_EXTERNAL}:80"
+      - "8080:80"
+      - "443:443"
     volumes:
       - ./config/nginx:/etc/nginx/conf.d
+      - ./logs/nginx:/var/log/nginx
+      - ./config/nginx/ssl:/etc/nginx/ssl/
     depends_on:
       - python
