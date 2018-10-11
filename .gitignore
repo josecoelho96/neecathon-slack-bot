@@ -2,3 +2,6 @@
 .env
 db/data
 __pycache__/
+cert.pem
+key.pem
+*.log
