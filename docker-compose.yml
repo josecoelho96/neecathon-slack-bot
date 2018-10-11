@@ -30,8 +30,6 @@ services:
     build:
       context: .
       dockerfile: ./deployment/nginx/Dockerfile
-      args:
-        SERVER_NAME: slackbot.localhost
     container_name: neecathon-nginx
     ports:
       - "8080:80"
