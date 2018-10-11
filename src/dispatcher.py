@@ -169,17 +169,6 @@ def join_team_dispatcher(request):
     if not user_exists_or_save_new_user(request):
         return
 
-    team_name = request['text']
-    if not team_name:
-        if not slackapi.logger_warning(messages.MISSING_ARGS):
-            logger.warn(messages.SLACK_POST_LOG_FAILED)
-        try:
-            database.save_request_log(request, False, db_messages.MISSING_ARGS)
-        except exceptions.SaveRequestLogError:
-            logger.warn(messages.REQUEST_LOG_SAVE_FAILED)
-        responder.create_team_delayed_reply_missing_args(request)
-        return
-
     team_entry_code = request["text"]
     if not team_entry_code:
         logger.warn(messages.MISSING_ARGS)
