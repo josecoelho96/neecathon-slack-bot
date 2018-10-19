@@ -126,15 +126,16 @@ Lists the last `qty` transactions made/received in the entire application.
 - Auto add users to channels
 - Report money receival on buy operation
 - Report logs to channel
+- Add/remove staff from staff channel
 
 ## Commands to add
 - TBD
 
 ## Features to add
-- Add/remove staff from staff channel
+- TDB
 
 ## Problems found
-- How to create first admin.
+- How to create first admin. CURRENT FIX: Manually alter the database.
 - FIXED: ~~Implementation: Log levels aren't well defined.~~
 - FIXED: ~~Entry codes are not being verified as unique. Not using UUID.~~
 - FIXED: ~~Users are only added to users table on join team commands, should be done always, but on every request will make this slow.~~
