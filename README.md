@@ -35,6 +35,8 @@ This will create the env file and create all channels/groups needed.
 2. Change settings of the workspace:
     1. **Workspace Signup Mode:** *Invitation only*
     2. **Workspace Icon:** *If desired*
+    3. **Permissions: -> Invitations:** *Disable 'Allow everyone (except guests) to invite new members. '*
+    4. **Permissions: -> Channel Management:** *Change all options to 'Workspace Owners' only.*
 3. Create new application:
     1. Setup *App Name*, *Short Description* and *App Icon*.
     2. On *OAuth & Permissions*, add the required scopes:
